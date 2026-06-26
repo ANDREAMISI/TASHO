@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import StatsCard from '@/Components/Dashboard/StatsCard';
 import ActivityFeed from '@/Components/Dashboard/ActivityFeed';
@@ -29,9 +29,12 @@ export default function Dashboard({ auth, stats, team }) {
                             <button className="bg-white border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                                 📊 Rapports
                             </button>
-                            <button className="bg-tasho-primary text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-tasho-primary/90">
+                            <Link
+                                href={route('projects.create')}
+                                className="bg-tasho-primary text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-tasho-primary/90"
+                            >
                                 + Nouveau Projet
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>

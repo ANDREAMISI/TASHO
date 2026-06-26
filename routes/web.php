@@ -128,6 +128,23 @@ Route::middleware('auth')->group(function () {
     // Routes Fichiers
     // ============================================================
     Route::prefix('files')->name('files.')->group(function () {
+        Route::get('/', function () {
+            $user = auth()->user();
+            $team = $user->teams()->first();
+
+            if (!$team) {
+                return redirect()->route('team.create');
+            }
+
+            $project = $team->projects()->latest()->first();
+
+            if (!$project) {
+                return redirect()->route('projects.create');
+            }
+
+            return redirect()->route('files.index', $project);
+        })->name('home');
+
         Route::get('/{project}', [FileController::class, 'index'])->name('index');
         Route::post('/upload', [FileController::class, 'upload'])->name('upload');
         Route::get('/{file}/download', [FileController::class, 'download'])->name('download');

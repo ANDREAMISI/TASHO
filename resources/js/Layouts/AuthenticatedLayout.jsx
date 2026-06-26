@@ -16,14 +16,14 @@ import {
 } from '@/Components/Icons';
 
 const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-    { name: 'Projets', href: '/projects', icon: FolderIcon },
-    { name: 'Fichiers', href: '/files', icon: DocumentIcon },
-    { name: 'Équipe', href: '/team', icon: UsersIcon },
-    { name: 'Clients', href: '/clients', icon: UserGroupIcon },
-    { name: 'Partages', href: '/shares', icon: LinkIcon },
-    { name: 'Activité', href: '/activity', icon: ChartBarIcon },
-    { name: 'Paramètres', href: '/settings', icon: Cog6ToothIcon },
+    { name: 'Dashboard', href: route('dashboard'), icon: HomeIcon },
+    { name: 'Projets', href: route('projects.index'), icon: FolderIcon },
+    { name: 'Fichiers', href: route('files.home'), icon: DocumentIcon },
+    { name: 'Équipe', href: route('team.index'), icon: UsersIcon },
+    { name: 'Clients', href: route('clients.index'), icon: UserGroupIcon },
+    { name: 'Partages', href: route('shares.index'), icon: LinkIcon },
+    { name: 'Activité', href: route('activity.index'), icon: ChartBarIcon },
+    { name: 'Paramètres', href: route('settings.index'), icon: Cog6ToothIcon },
 ];
 
 export default function AuthenticatedLayout({ children, user }) {
@@ -71,6 +71,22 @@ export default function AuthenticatedLayout({ children, user }) {
                                 <div className="text-right hidden sm:block">
                                     <p className="text-sm font-medium text-gray-700">{user.name}</p>
                                     <p className="text-xs text-gray-400">{user.email}</p>
+                                </div>
+                                <div className="hidden sm:flex items-center space-x-2">
+                                    <Link
+                                        href={route('profile.edit')}
+                                        className="text-sm text-gray-600 hover:text-gray-800 rounded-md px-3 py-2 hover:bg-gray-100 transition"
+                                    >
+                                        Profil
+                                    </Link>
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                        className="text-sm text-gray-600 hover:text-gray-800 rounded-md px-3 py-2 hover:bg-gray-100 transition"
+                                    >
+                                        Déconnexion
+                                    </Link>
                                 </div>
                                 <div className="relative">
                                     <button className="flex items-center space-x-2 group">
