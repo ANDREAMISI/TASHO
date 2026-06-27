@@ -16,7 +16,7 @@ return new class extends Migration
             $table->bigInteger('storage_limit')->default(0); // en bytes
             $table->integer('max_team_members')->default(1);
             $table->integer('max_projects')->default(-1); // -1 = illimité
-            $table->integer('max_file_size')->default(524288000); // 500MB
+            $table->bigInteger('max_file_size')->default(524288000); // 500MB
             $table->json('features')->nullable();
             $table->decimal('price_monthly', 10, 2)->default(0);
             $table->decimal('price_yearly', 10, 2)->default(0);
