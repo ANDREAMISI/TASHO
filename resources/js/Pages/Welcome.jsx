@@ -185,10 +185,10 @@ export default function Welcome({ canLogin, canRegister }) {
                                 Start for free
                                 <ArrowRightIcon className="h-5 w-5 ml-2" />
                             </Link>
-                            <button className="inline-flex items-center px-6 py-3 bg-white/10 text-white rounded-lg font-semibold hover:bg-white/20 transition text-lg backdrop-blur-sm">
+                            <Link href={route('login')} className="inline-flex items-center px-6 py-3 bg-white/10 text-white rounded-lg font-semibold hover:bg-white/20 transition text-lg backdrop-blur-sm">
                                 <PlayIcon className="h-5 w-5 mr-2" />
-                                Watch demo
-                            </button>
+                                Connexion
+                            </Link>
                         </div>
                         <p className="mt-4 text-sm text-gray-400">
                             Free 14-day trial · No credit card required · Cancel anytime
