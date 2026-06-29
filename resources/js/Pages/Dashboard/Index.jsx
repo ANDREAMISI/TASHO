@@ -26,9 +26,6 @@ export default function Dashboard({ auth, stats, team }) {
                             </p>
                         </div>
                         <div className="flex space-x-3">
-                            <button className="bg-white border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                📊 Rapports
-                            </button>
                             <Link
                                 href={route('projects.create')}
                                 className="bg-tasho-primary text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-tasho-primary/90"

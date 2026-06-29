@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 
 class FileService
 {
@@ -17,40 +18,60 @@ class FileService
      */
     public function uploadFile(UploadedFile $uploadedFile, Project $project, ?int $folderId, User $user): File
     {
-        $originalName = $uploadedFile->getClientOriginalName();
-        $extension = $uploadedFile->getClientOriginalExtension();
-        $name = pathinfo($originalName, PATHINFO_FILENAME);
-        
-        // Générer un nom unique
-        $slug = Str::slug($name) . '-' . Str::random(8);
-        $fileName = $slug . '.' . $extension;
-        
-        // Créer le chemin
-        $path = 'projects/' . $project->id . '/' . date('Y/m/d') . '/' . $fileName;
-        
-        // Uploader le fichier
-        Storage::disk('local')->putFileAs(
-            'projects/' . $project->id . '/' . date('Y/m/d'),
-            $uploadedFile,
-            $fileName
-        );
+        try {
+            $originalName = $uploadedFile->getClientOriginalName();
+            $extension = $uploadedFile->getClientOriginalExtension();
+            $name = pathinfo($originalName, PATHINFO_FILENAME);
+            
+            // Générer un nom unique
+            $slug = Str::slug($name) . '-' . Str::random(8);
+            $fileName = $slug . '.' . $extension;
+            
+            // Créer le chemin
+            $path = 'projects/' . $project->id . '/' . date('Y/m/d') . '/' . $fileName;
+            
+            Log::info('Upload de fichier:', [
+                'original' => $originalName,
+                'path' => $path,
+                'size' => $uploadedFile->getSize()
+            ]);
+            
+            // Uploader le fichier
+            Storage::disk('local')->putFileAs(
+                'projects/' . $project->id . '/' . date('Y/m/d'),
+                $uploadedFile,
+                $fileName
+            );
 
-        // Créer l'entrée en base de données
-        return File::create([
-            'project_id' => $project->id,
-            'folder_id' => $folderId,
-            'user_id' => $user->id,
-            'name' => $name,
-            'original_name' => $originalName,
-            'slug' => $slug,
-            'path' => $path,
-            'disk' => 'local',
-            'size' => $uploadedFile->getSize(),
-            'mime_type' => $uploadedFile->getMimeType(),
-            'extension' => $extension,
-            'hash' => md5_file($uploadedFile->getRealPath()),
-            'uploaded_at' => now(),
-        ]);
+            // Créer l'entrée en base de données
+            $file = File::create([
+                'project_id' => $project->id,
+                'folder_id' => $folderId,
+                'user_id' => $user->id,
+                'name' => $name,
+                'original_name' => $originalName,
+                'slug' => $slug,
+                'path' => $path,
+                'disk' => 'local',
+                'size' => $uploadedFile->getSize(),
+                'mime_type' => $uploadedFile->getMimeType(),
+                'extension' => $extension,
+                'hash' => md5_file($uploadedFile->getRealPath()),
+                'uploaded_at' => now(),
+            ]);
+
+            Log::info('Entrée DB créée:', ['file_id' => $file->id]);
+
+            return $file;
+
+        } catch (\Exception $e) {
+            Log::error('Erreur dans FileService::uploadFile:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            throw $e;
+        }
     }
 
     /**

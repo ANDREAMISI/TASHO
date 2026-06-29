@@ -2,8 +2,9 @@
 
 namespace App\Policies;
 
-use App\Models\File;
 use App\Models\User;
+use App\Models\File;
+use App\Models\Project;  
 
 class FilePolicy
 {
@@ -14,7 +15,7 @@ class FilePolicy
         return $project->isOwner($user) || $project->hasMember($user);
     }
 
-    public function create(User $user, Project $project): bool
+    public function create(User $user, Project $project): bool  
     {
         if ($user->email === 'admin@tasho.com') return true;
         return $project->isOwner($user) || $project->hasMember($user);

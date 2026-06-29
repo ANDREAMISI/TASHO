@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\DashboardService;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
@@ -17,11 +16,17 @@ class DashboardController extends Controller
 
     public function index()
     {
+        // ✅ Rediriger les Super Admins vers leur dashboard
+        if (auth()->user()->isSuperAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         $user = auth()->user();
         $team = $user->teams()->first();
 
         if (!$team) {
-            return Inertia::render('Dashboard/Setup');
+            return redirect()->route('team.create')
+                ->with('info', 'Créez une équipe pour commencer.');
         }
 
         $stats = $this->dashboardService->getStats($team);
@@ -34,13 +39,14 @@ class DashboardController extends Controller
 
     public function admin()
     {
-        if (!Gate::allows('is-super-admin')) {
-            abort(403);
+        // ✅ Vérifier avec isSuperAdmin()
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Accès réservé aux administrateurs.');
         }
 
         $stats = $this->dashboardService->getAdminStats();
 
-        return Inertia::render('Dashboard/Admin', [
+        return Inertia::render('Admin/Dashboard', [
             'stats' => $stats,
         ]);
     }

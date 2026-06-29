@@ -11,6 +11,7 @@ use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class FileController extends Controller
@@ -94,12 +95,27 @@ class FileController extends Controller
             });
 
         // Récupérer la structure des dossiers
-        $folders = $this->fileService->getFolderStructure($project);
+        $folders = Folder::where('project_id', $project->id)
+            ->whereNull('parent_id')
+            ->with(['children', 'files'])
+            ->get();
 
         $currentFolder = null;
         if ($request->filled('folder_id')) {
             $currentFolder = Folder::find($request->folder_id);
         }
+
+        $stats = [
+            'total_files' => File::where('project_id', $project->id)->count(),
+            'total_size' => File::where('project_id', $project->id)->sum('size'),
+            'images' => File::where('project_id', $project->id)->where('mime_type', 'LIKE', 'image/%')->count(),
+            'videos' => File::where('project_id', $project->id)->where('mime_type', 'LIKE', 'video/%')->count(),
+            'documents' => File::where('project_id', $project->id)->whereIn('mime_type', [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ])->count(),
+        ];
 
         return Inertia::render('File/Index', [
             'project' => $project,
@@ -107,7 +123,7 @@ class FileController extends Controller
             'folders' => $folders,
             'currentFolder' => $currentFolder,
             'filters' => $request->only(['folder_id', 'type', 'search']),
-            'stats' => $this->fileService->getProjectStats($project),
+            'stats' => $stats,
         ]);
     }
 
@@ -116,47 +132,68 @@ class FileController extends Controller
      */
     public function upload(Request $request)
     {
-        $request->validate([
-            'project_id' => 'required|exists:projects,id',
-            'folder_id' => 'nullable|exists:folders,id',
-            'file' => 'required|file|max:5120', // 5GB max
-        ]);
-
-        $project = Project::findOrFail($request->project_id);
-        Gate::authorize('create', [File::class, $project]);
-
-        $uploadedFile = $request->file('file');
-        
-        // Vérifier la taille
-        if ($uploadedFile->getSize() > $this->getMaxFileSize($project)) {
-            return back()->withErrors([
-                'file' => 'Le fichier dépasse la taille maximale autorisée.',
+        try {
+            Log::info('=== UPLOAD DE FICHIER ===');
+            Log::info('Données reçues:', $request->all());
+            
+            $request->validate([
+                'project_id' => 'required|exists:projects,id',
+                'folder_id' => 'nullable|exists:folders,id',
+                'file' => 'required|file|max:5120', // 5GB max
             ]);
-        }
 
-        // Vérifier le type de fichier
-        if (!$this->isAllowedFileType($uploadedFile)) {
-            return back()->withErrors([
-                'file' => 'Ce type de fichier n\'est pas autorisé.',
+            Log::info('Validation réussie');
+
+            $project = Project::findOrFail($request->project_id);
+            Gate::authorize('create', [File::class, $project]);
+
+            $uploadedFile = $request->file('file');
+            
+            Log::info('Fichier reçu:', [
+                'name' => $uploadedFile->getClientOriginalName(),
+                'size' => $uploadedFile->getSize(),
+                'mime' => $uploadedFile->getMimeType(),
             ]);
+
+            // Vérifier la taille
+            $maxSize = $this->getMaxFileSize($project);
+            if ($uploadedFile->getSize() > $maxSize) {
+                Log::error('Fichier trop volumineux', ['size' => $uploadedFile->getSize(), 'max' => $maxSize]);
+                return back()->withErrors([
+                    'file' => 'Le fichier dépasse la taille maximale autorisée (' . ($maxSize / 1024 / 1024) . 'MB).',
+                ]);
+            }
+
+            // Vérifier le type de fichier
+            if (!$this->isAllowedFileType($uploadedFile)) {
+                Log::error('Type de fichier non autorisé', ['mime' => $uploadedFile->getMimeType()]);
+                return back()->withErrors([
+                    'file' => 'Ce type de fichier n\'est pas autorisé.',
+                ]);
+            }
+
+            // Créer le fichier
+            $file = $this->fileService->uploadFile(
+                $uploadedFile,
+                $project,
+                $request->folder_id,
+                auth()->user()
+            );
+
+            Log::info('Fichier uploadé avec succès', ['file_id' => $file->id]);
+
+            return back()->with('success', 'Fichier uploadé avec succès !');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'upload:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors(['message' => 'Erreur: ' . $e->getMessage()]);
         }
-
-        $file = $this->fileService->uploadFile(
-            $uploadedFile,
-            $project,
-            $request->folder_id,
-            auth()->user()
-        );
-
-        // Log l'activité
-        $this->auditService->log(
-            auth()->user(),
-            'upload',
-            $file,
-            ['project_id' => $project->id]
-        );
-
-        return back()->with('success', 'Fichier uploadé avec succès !');
     }
 
     /**
@@ -170,14 +207,6 @@ class FileController extends Controller
         $file->increment('download_count');
         $file->update(['last_accessed_at' => now()]);
 
-        // Log l'activité
-        $this->auditService->log(
-            auth()->user(),
-            'download',
-            $file,
-            ['project_id' => $file->project_id]
-        );
-
         return Storage::disk($file->disk)->download($file->path, $file->original_name);
     }
 
@@ -188,19 +217,9 @@ class FileController extends Controller
     {
         Gate::authorize('view', $file);
 
-        // Incrémenter le compteur de vues
         $file->increment('view_count');
         $file->update(['last_accessed_at' => now()]);
 
-        // Log l'activité
-        $this->auditService->log(
-            auth()->user(),
-            'view',
-            $file,
-            ['project_id' => $file->project_id]
-        );
-
-        // Pour les images, retourner l'URL
         if ($file->isImage()) {
             return response()->json([
                 'url' => Storage::disk($file->disk)->url($file->path),
@@ -208,7 +227,6 @@ class FileController extends Controller
             ]);
         }
 
-        // Pour les vidéos, retourner l'URL
         if ($file->isVideo()) {
             return response()->json([
                 'url' => Storage::disk($file->disk)->url($file->path),
@@ -217,7 +235,6 @@ class FileController extends Controller
             ]);
         }
 
-        // Pour les documents, retourner les métadonnées
         return response()->json([
             'file' => $file,
             'type' => 'document',
@@ -231,14 +248,6 @@ class FileController extends Controller
     public function destroy(File $file)
     {
         Gate::authorize('delete', $file);
-
-        // Log l'activité avant suppression
-        $this->auditService->log(
-            auth()->user(),
-            'delete',
-            $file,
-            ['project_id' => $file->project_id]
-        );
 
         $this->fileService->deleteFile($file);
 
@@ -269,34 +278,11 @@ class FileController extends Controller
     }
 
     /**
-     * Mettre à jour les métadonnées d'un fichier
-     */
-    public function update(Request $request, File $file)
-    {
-        Gate::authorize('update', $file);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'folder_id' => 'nullable|exists:folders,id',
-        ]);
-
-        $file->update([
-            'name' => $request->name,
-            'folder_id' => $request->folder_id,
-        ]);
-
-        return back()->with('success', 'Fichier mis à jour avec succès !');
-    }
-
-    /**
      * Obtenir la taille maximale autorisée
      */
     private function getMaxFileSize(Project $project): int
     {
-        $subscription = $project->team->subscription()->first();
-        $plan = $subscription ? $subscription->plan : null;
-        
-        return $plan ? $plan->max_file_size : 524288000; // 500MB par défaut
+        return 5368709120; // 5GB par défaut
     }
 
     /**
@@ -313,6 +299,8 @@ class FileController extends Controller
             'video/mp4',
             'video/quicktime',
             'video/webm',
+            'video/x-msvideo',    // AVI
+            'video/x-matroska',   // MKV
             'application/pdf',
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -324,8 +312,12 @@ class FileController extends Controller
             'text/csv',
             'application/zip',
             'application/x-rar-compressed',
+            'application/x-7z-compressed',
         ];
 
-        return in_array($file->getMimeType(), $allowedTypes);
+        $mimeType = $file->getMimeType();
+        Log::info('Vérification du type MIME:', ['mime' => $mimeType, 'allowed' => in_array($mimeType, $allowedTypes)]);
+
+        return in_array($mimeType, $allowedTypes);
     }
 }

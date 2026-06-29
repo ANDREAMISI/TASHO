@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AccessLog;
 use App\Models\Project;
+use App\Models\Team;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -121,7 +122,17 @@ class ActivityController extends Controller
         $projects = Project::where('team_id', $team->id)
             ->get(['id', 'title']);
 
-        $users = $team->members()->get(['id', 'name', 'email']);
+        // ✅ Correction : Spécifier explicitement les colonnes avec alias
+        $users = $team->members()
+            ->select('users.id as user_id', 'users.name', 'users.email')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->user_id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ];
+            });
 
         return Inertia::render('Activity/Index', [
             'logs' => $logs,

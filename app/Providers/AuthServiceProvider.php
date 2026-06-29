@@ -23,24 +23,24 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        // Gate pour vérifier si l'utilisateur est super admin
+        // ✅ Utiliser la méthode isSuperAdmin() du modèle
         Gate::define('is-super-admin', function ($user) {
-            return $user->email === 'admin@tasho.com';
+            return $user->isSuperAdmin();
         });
 
         // Gate pour vérifier les permissions d'équipe
         Gate::define('manage-team', function ($user, Team $team) {
-            return $team->isOwner($user) || $user->email === 'admin@tasho.com';
+            return $team->isOwner($user) || $user->isSuperAdmin();
         });
 
         Gate::define('invite-team-member', function ($user, Team $team) {
-            if ($user->email === 'admin@tasho.com') return true;
+            if ($user->isSuperAdmin()) return true;
             $role = $team->getMemberRole($user);
             return in_array($role, ['owner', 'manager']);
         });
 
         Gate::define('manage-project', function ($user, Project $project) {
-            return $project->isOwner($user) || $user->email === 'admin@tasho.com';
+            return $project->isOwner($user) || $user->isSuperAdmin();
         });
     }
 }

@@ -199,29 +199,24 @@ Route::middleware('auth')->group(function () {
 | Routes Admin (Super Admin uniquement)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'verified', 'super.admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware([\App\Http\Middleware\SuperAdminMiddleware::class])->group(function () {
     // Dashboard Admin
     Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
     
-    // ============================================================
     // Gestion des utilisateurs
-    // ============================================================
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::post('/users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
     
-    // ============================================================
     // Gestion des équipes (Admin)
-    // ============================================================
     Route::get('/teams', [AdminTeamController::class, 'index'])->name('teams.index');
     Route::get('/teams/{team}', [AdminTeamController::class, 'show'])->name('teams.show');
     Route::delete('/teams/{team}', [AdminTeamController::class, 'destroy'])->name('teams.destroy');
     
-    // ============================================================
     // Gestion des abonnements
-    // ============================================================
     Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
     Route::get('/subscriptions/create', [SubscriptionController::class, 'create'])->name('subscriptions.create');
     Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
@@ -230,6 +225,7 @@ Route::middleware(['auth', 'verified', 'super.admin'])->prefix('admin')->name('a
     Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
     Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
     Route::post('/subscriptions/{subscription}/toggle', [SubscriptionController::class, 'toggle'])->name('subscriptions.toggle');
+    });
 });
 
 /*

@@ -25,8 +25,11 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewFile, setPreviewFile] = useState(null);
+    const [uploadFile, setUploadFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
-    const { data, setData, post, processing, errors } = useForm({
+    
+    const { data, setData, post, processing, errors, reset } = useForm({
         file: null,
         folder_id: currentFolder?.id || '',
     });
@@ -65,24 +68,45 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
         return 'bg-gray-50 hover:bg-gray-100';
     };
 
+    // ✅ Version corrigée avec router.post
     const handleUpload = (e) => {
         e.preventDefault();
-        const formData = new FormData();
-        formData.append('file', data.file);
-        formData.append('project_id', project.id);
-        if (data.folder_id) {
-            formData.append('folder_id', data.folder_id);
+        
+        if (!uploadFile) {
+            alert('Veuillez sélectionner un fichier.');
+            return;
         }
 
-        post(route('files.upload'), {
-            data: formData,
+        const formData = new FormData();
+        formData.append('file', uploadFile);
+        formData.append('project_id', String(project.id)); // ✅ Convertir en string
+        if (data.folder_id) {
+            formData.append('folder_id', String(data.folder_id));
+        }
+
+        setUploading(true);
+
+        router.post('/files/upload', formData, {
             forceFormData: true,
+            preserveScroll: true,
             onSuccess: () => {
+                console.log('✅ Upload réussi !');
                 setShowUploadModal(false);
-                setData('file', null);
+                setUploadFile(null);
+                setUploading(false);
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
+                window.location.reload();
+            },
+            onError: (errors) => {
+                console.error('❌ Erreurs:', errors);
+                const errorMessage = typeof errors === 'string' ? errors : Object.values(errors).flat().join('\n');
+                alert('Erreur: ' + errorMessage);
+                setUploading(false);
+            },
+            onFinish: () => {
+                setUploading(false);
             },
         });
     };
@@ -426,7 +450,13 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
                                     Uploader un fichier
                                 </h3>
                                 <button
-                                    onClick={() => setShowUploadModal(false)}
+                                    onClick={() => {
+                                        setShowUploadModal(false);
+                                        setUploadFile(null);
+                                        if (fileInputRef.current) {
+                                            fileInputRef.current.value = '';
+                                        }
+                                    }}
                                     className="text-gray-400 hover:text-gray-600"
                                 >
                                     <XMarkIcon className="h-5 w-5" />
@@ -441,7 +471,11 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
                                     <input
                                         type="file"
                                         ref={fileInputRef}
-                                        onChange={(e) => setData('file', e.target.files[0])}
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            console.log('📎 Fichier sélectionné:', file?.name);
+                                            setUploadFile(file);
+                                        }}
                                         className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-tasho-primary/10 file:text-tasho-primary hover:file:bg-tasho-primary/20"
                                         required
                                     />
@@ -471,17 +505,23 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
                                 <div className="flex justify-end space-x-3 pt-4">
                                     <button
                                         type="button"
-                                        onClick={() => setShowUploadModal(false)}
+                                        onClick={() => {
+                                            setShowUploadModal(false);
+                                            setUploadFile(null);
+                                            if (fileInputRef.current) {
+                                                fileInputRef.current.value = '';
+                                            }
+                                        }}
                                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                                     >
                                         Annuler
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={processing}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-tasho-primary rounded-md hover:bg-tasho-primary/90 disabled:opacity-50"
+                                        disabled={uploading || !uploadFile}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-tasho-primary rounded-md hover:bg-tasho-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {processing ? 'Upload...' : 'Uploader'}
+                                        {uploading ? 'Upload...' : 'Uploader'}
                                     </button>
                                 </div>
                             </form>

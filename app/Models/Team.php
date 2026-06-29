@@ -48,7 +48,12 @@ class Team extends Model
     {
         return $this->belongsToMany(User::class, 'team_members')
                     ->withPivot('role', 'permissions', 'joined_at', 'last_activity_at')
-                    ->withTimestamps();
+                    ->withTimestamps()
+                    ->withCasts([
+                        'permissions' => 'array',
+                        'joined_at' => 'datetime',
+                        'last_activity_at' => 'datetime',
+                    ]);
     }
 
     public function invitations(): HasMany

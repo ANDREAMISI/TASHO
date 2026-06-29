@@ -12,6 +12,7 @@ import {
     ChevronDownIcon,
     UserGroupIcon,
     DocumentIcon,
+    ArrowRightOnRectangleIcon, // ✅ Ajouter cette icône
 } from '@/Components/Icons';
 
 const navigation = [
@@ -62,6 +63,16 @@ export default function AdminLayout({ children, user }) {
                                 <div className="h-8 w-8 rounded-full bg-tasho-primary text-white flex items-center justify-center text-sm font-semibold">
                                     {user.name.charAt(0).toUpperCase()}
                                 </div>
+                                {/* ✅ AJOUTER LE BOUTON DE DÉCONNEXION */}
+                                <Link
+                                    href="/logout"
+                                    method="post"
+                                    as="button"
+                                    className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition"
+                                    title="Déconnexion"
+                                >
+                                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -101,6 +112,18 @@ export default function AdminLayout({ children, user }) {
                         <div className="bg-tasho-primary/10 rounded-lg p-3">
                             <p className="text-xs text-gray-500">Connecté en tant que</p>
                             <p className="text-sm font-medium text-gray-900">{user.email}</p>
+                        </div>
+                        {/* ✅ AJOUTER UN BOUTON DE DÉCONNEXION DANS LE SIDEBAR AUSSI */}
+                        <div className="mt-3">
+                            <Link
+                                href="/logout"
+                                method="post"
+                                as="button"
+                                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition"
+                            >
+                                <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
+                                Déconnexion
+                            </Link>
                         </div>
                     </div>
                 </div>

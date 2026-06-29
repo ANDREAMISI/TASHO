@@ -1,4 +1,4 @@
-// Heroicons (Outline) - Toutes les icônes disponibles
+// Heroicons (Outline)
 import {
     HomeIcon,
     FolderIcon,
@@ -42,11 +42,11 @@ import {
     SparklesIcon,
     PlayIcon,
     FolderPlusIcon,
-    FunnelIcon,      // FilterIcon → FunnelIcon
+    FunnelIcon,
     UserPlusIcon,
     UserMinusIcon,
-    DocumentDuplicateIcon, // CopyIcon → DocumentDuplicateIcon
-    EyeSlashIcon,    // EyeOffIcon → EyeSlashIcon
+    DocumentDuplicateIcon,
+    EyeSlashIcon,
     ArrowPathIcon,
     CreditCardIcon,
     ArrowUpRightIcon,
@@ -54,6 +54,11 @@ import {
     StarIcon,
     PaperAirplaneIcon,
     PaperClipIcon,
+    TagIcon,
+    // ✅ AJOUT
+    ArrowTrendingUpIcon,
+    ArrowTrendingDownIcon,
+    ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
 // Heroicons (Solid)
@@ -136,9 +141,12 @@ import {
     Lock as LockIcon,
     Copy,
     EyeOff as EyeOffIcon,
+    Tag,
 } from 'lucide-react';
 
-// Exports - Heroicons Outline
+// ============================================================
+// EXPORTS - Heroicons Outline
+// ============================================================
 export {
     HomeIcon,
     FolderIcon,
@@ -194,9 +202,16 @@ export {
     StarIcon,
     PaperAirplaneIcon,
     PaperClipIcon,
+    TagIcon,
+    // ✅ AJOUT
+    ArrowTrendingUpIcon,
+    ArrowTrendingDownIcon,
+    ArrowRightOnRectangleIcon,
 };
 
-// Exports - Heroicons Solid
+// ============================================================
+// EXPORTS - Heroicons Solid
+// ============================================================
 export {
     HomeIconSolid,
     FolderIconSolid,
@@ -213,14 +228,16 @@ export {
     FunnelIconSolid,
 };
 
-// Exports - Lucide (pour les icônes qui n'existent pas dans Heroicons)
+// ============================================================
+// EXPORTS - Lucide
+// ============================================================
 export {
     LayoutDashboard,
     Briefcase,
     Cloud,
     Database,
-    Calendar,
-    Clock,
+    Calendar as CalendarLucide,
+    Clock as ClockLucide,
     Upload,
     Download,
     FolderOpenLucide,
@@ -236,7 +253,6 @@ export {
     Menu,
     Search,
     Filter,
-    Filter as FilterIcon,
     MoreHorizontal,
     MoreVertical,
     Star,
@@ -254,17 +270,13 @@ export {
     Plus,
     Minus,
     X,
-    X as XIcon,
     Check,
-    Cloud as CloudIcon,
-    Copy as CopyIcon,
     AlertCircle,
     Info,
     HelpCircle,
     Loader2,
     RefreshCw,
     ChevronDown,
-    ChevronDown as ChevronDownIcon,
     ChevronRight,
     ChevronLeft,
     ChevronUp,
@@ -278,8 +290,20 @@ export {
     ArrowUpRight,
     ArrowDownToLine,
     Mail,
-    Mail as MailIcon,
     LockIcon,
     Copy,
     EyeOffIcon,
+    Tag,
+};
+
+// ============================================================
+// EXPORTS - Alias pour compatibilité (SANS DOUBLONS)
+// ============================================================
+export {
+    Filter as FilterIcon,
+    Cloud as CloudIcon,
+    Copy as CopyIcon,
+    Mail as MailIcon,
+    X as XIcon,
+    ChevronDown as ChevronDownIcon,
 };
