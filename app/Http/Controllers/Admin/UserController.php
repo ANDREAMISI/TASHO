@@ -4,35 +4,49 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
+    /**
+     * Vérifier que l'utilisateur est Super Admin
+     */
+    private function checkSuperAdmin()
+    {
+        if (!Auth::check() || !Auth::user()->isSuperAdmin()) {
+            abort(403, 'Accès réservé aux administrateurs.');
+        }
+    }
+
     public function index()
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
-        $users = User::paginate(15);
+        $users = User::orderBy('created_at', 'desc')->paginate(15);
 
-        return view('admin.users.index', compact('users'));
+        return Inertia::render('Admin/Users/Index', [
+            'users' => $users,
+        ]);
     }
 
     public function show(User $user)
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
-        return view('admin.users.show', compact('user'));
+        return Inertia::render('Admin/Users/Show', [
+            'user' => $user,
+        ]);
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(Request $request, User $user)
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -41,21 +55,23 @@ class UserController extends Controller
         return redirect()->route('admin.users.show', $user)->with('success', 'Utilisateur mis à jour.');
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function toggle(User $user)
     {
-        Gate::authorize('is-super-admin');
-
-        $user->delete();
-
-        return redirect()->route('admin.users.index')->with('success', 'Utilisateur supprimé.');
-    }
-
-    public function toggle(User $user): RedirectResponse
-    {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $user->toggleActive();
 
-        return redirect()->route('admin.users.index')->with('success', 'Statut utilisateur mis à jour.');
+        return redirect()->route('admin.users.index')
+            ->with('success', 'Statut utilisateur mis à jour.');
+    }
+
+    public function destroy(User $user)
+    {
+        $this->checkSuperAdmin();
+
+        $user->delete();
+
+        return redirect()->route('admin.users.index')
+            ->with('success', 'Utilisateur supprimé.');
     }
 }

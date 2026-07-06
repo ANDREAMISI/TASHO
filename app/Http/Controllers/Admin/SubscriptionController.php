@@ -9,7 +9,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SubscriptionController extends Controller
@@ -22,11 +22,21 @@ class SubscriptionController extends Controller
     }
 
     /**
+     * Vérifier que l'utilisateur est Super Admin
+     */
+    private function checkSuperAdmin()
+    {
+        if (!Auth::check() || !Auth::user()->isSuperAdmin()) {
+            abort(403, 'Accès réservé aux administrateurs.');
+        }
+    }
+
+    /**
      * Afficher la liste des abonnements
      */
     public function index(Request $request)
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $query = Subscription::with(['user', 'team', 'plan']);
 
@@ -101,7 +111,7 @@ class SubscriptionController extends Controller
      */
     public function create()
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $plans = Plan::where('is_active', true)->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly']);
         $teams = Team::with('owner')->get(['id', 'name', 'owner_id']);
@@ -121,7 +131,7 @@ class SubscriptionController extends Controller
      */
     public function store(Request $request)
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -165,7 +175,7 @@ class SubscriptionController extends Controller
      */
     public function show(Subscription $subscription)
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $subscription->load(['user', 'team', 'plan']);
 
@@ -203,7 +213,7 @@ class SubscriptionController extends Controller
      */
     public function update(Request $request, Subscription $subscription)
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $request->validate([
             'plan_id' => 'required|exists:plans,id',
@@ -240,7 +250,7 @@ class SubscriptionController extends Controller
      */
     public function destroy(Subscription $subscription)
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $subscription->delete();
 
@@ -253,7 +263,7 @@ class SubscriptionController extends Controller
      */
     public function toggle(Subscription $subscription)
     {
-        Gate::authorize('is-super-admin');
+        $this->checkSuperAdmin();
 
         $newStatus = $subscription->status === 'active' ? 'inactive' : 'active';
         $subscription->update(['status' => $newStatus]);

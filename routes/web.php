@@ -15,6 +15,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\TeamController as AdminTeamController;
+use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
@@ -201,30 +202,61 @@ Route::middleware('auth')->group(function () {
 */
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::middleware([\App\Http\Middleware\SuperAdminMiddleware::class])->group(function () {
-    // Dashboard Admin
-    Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
-    
-    // Gestion des utilisateurs
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
-    Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
-    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-    Route::post('/users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
-    
-    // Gestion des équipes (Admin)
-    Route::get('/teams', [AdminTeamController::class, 'index'])->name('teams.index');
-    Route::get('/teams/{team}', [AdminTeamController::class, 'show'])->name('teams.show');
-    Route::delete('/teams/{team}', [AdminTeamController::class, 'destroy'])->name('teams.destroy');
-    
-    // Gestion des abonnements
-    Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
-    Route::get('/subscriptions/create', [SubscriptionController::class, 'create'])->name('subscriptions.create');
-    Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
-    Route::get('/subscriptions/{subscription}', [SubscriptionController::class, 'show'])->name('subscriptions.show');
-    Route::get('/subscriptions/{subscription}/edit', [SubscriptionController::class, 'edit'])->name('subscriptions.edit');
-    Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
-    Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
-    Route::post('/subscriptions/{subscription}/toggle', [SubscriptionController::class, 'toggle'])->name('subscriptions.toggle');
+        // Dashboard Admin
+        Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
+        
+        // ============================================================
+        // Gestion des utilisateurs
+        // ============================================================
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
+        
+        // ============================================================
+        // Gestion des équipes (Admin)
+        // ============================================================
+        Route::get('/teams', [AdminTeamController::class, 'index'])->name('teams.index');
+        Route::get('/teams/{team}', [AdminTeamController::class, 'show'])->name('teams.show');
+        Route::delete('/teams/{team}', [AdminTeamController::class, 'destroy'])->name('teams.destroy');
+        Route::post('/teams/{team}/toggle', [AdminTeamController::class, 'toggle'])->name('teams.toggle');
+        
+        // ============================================================
+        // Gestion des abonnements
+        // ============================================================
+        Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+        Route::get('/subscriptions/create', [SubscriptionController::class, 'create'])->name('subscriptions.create');
+        Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
+        Route::get('/subscriptions/{subscription}', [SubscriptionController::class, 'show'])->name('subscriptions.show');
+        Route::get('/subscriptions/{subscription}/edit', [SubscriptionController::class, 'edit'])->name('subscriptions.edit');
+        Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
+        Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
+        Route::post('/subscriptions/{subscription}/toggle', [SubscriptionController::class, 'toggle'])->name('subscriptions.toggle');
+        
+        // ============================================================
+        // Gestion des plans
+        // ============================================================
+        Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
+        Route::get('/plans/create', [PlanController::class, 'create'])->name('plans.create');
+        Route::post('/plans', [PlanController::class, 'store'])->name('plans.store');
+        Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
+        Route::get('/plans/{plan}/edit', [PlanController::class, 'edit'])->name('plans.edit');
+        Route::put('/plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
+        Route::delete('/plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
+        Route::post('/plans/{plan}/toggle', [PlanController::class, 'toggle'])->name('plans.toggle');
+        
+        // ============================================================
+        // Activité Admin
+        // ============================================================
+        Route::get('/activity', [ActivityController::class, 'adminIndex'])->name('activity.index');
+        Route::get('/activity/export', [ActivityController::class, 'adminExport'])->name('activity.export');
+        
+        // ============================================================
+        // Paramètres Admin
+        // ============================================================
+        Route::get('/settings', [SettingsController::class, 'adminIndex'])->name('settings.index');
+        Route::put('/settings', [SettingsController::class, 'adminUpdate'])->name('settings.update');
     });
 });
 

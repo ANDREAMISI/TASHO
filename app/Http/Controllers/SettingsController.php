@@ -9,6 +9,16 @@ use Inertia\Inertia;
 
 class SettingsController extends Controller
 {
+    /**
+     * Vérifier que l'utilisateur est Super Admin
+     */
+    private function checkSuperAdmin()
+    {
+        if (!Auth::check() || !Auth::user()->isSuperAdmin()) {
+            abort(403, 'Accès réservé aux administrateurs.');
+        }
+    }
+
     public function index()
     {
         return Inertia::render('Settings/Index', [
@@ -52,5 +62,33 @@ class SettingsController extends Controller
         return Inertia::render('Settings/Subscription', [
             'user' => Auth::user(),
         ]);
+    }
+
+    // ============================================================
+    // MÉTHODES ADMIN
+    // ============================================================
+
+    /**
+     * Admin - Afficher les paramètres
+     */
+    public function adminIndex()
+    {
+        $this->checkSuperAdmin();
+
+        return Inertia::render('Admin/Settings/Index');
+    }
+
+    /**
+     * Admin - Mettre à jour les paramètres
+     */
+    public function adminUpdate(Request $request): RedirectResponse
+    {
+        $this->checkSuperAdmin();
+
+        // Vous pouvez ajouter ici la logique de mise à jour des paramètres
+        // Exemple: sauvegarder les paramètres dans la base de données ou dans un fichier de config
+
+        return redirect()->route('admin.settings.index')
+            ->with('success', 'Paramètres mis à jour avec succès !');
     }
 }

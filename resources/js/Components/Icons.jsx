@@ -59,6 +59,8 @@ import {
     ArrowTrendingUpIcon,
     ArrowTrendingDownIcon,
     ArrowRightOnRectangleIcon,
+    CurrencyDollarIcon,
+    BoltIcon,
 } from '@heroicons/react/24/outline';
 
 // Heroicons (Solid)
@@ -207,6 +209,8 @@ export {
     ArrowTrendingUpIcon,
     ArrowTrendingDownIcon,
     ArrowRightOnRectangleIcon,
+    CurrencyDollarIcon,
+    BoltIcon,
 };
 
 // ============================================================

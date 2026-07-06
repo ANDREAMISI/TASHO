@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Squares2X2Icon,
-    HomeIcon,
     UsersIcon,
     CreditCardIcon,
     ChartBarIcon,
@@ -12,12 +11,14 @@ import {
     ChevronDownIcon,
     UserGroupIcon,
     DocumentIcon,
-    ArrowRightOnRectangleIcon, // ✅ Ajouter cette icône
+    ArrowRightOnRectangleIcon,
+    CurrencyDollarIcon,
 } from '@/Components/Icons';
 
 const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
     { name: 'Utilisateurs', href: '/admin/users', icon: UsersIcon },
+    { name: 'Plans', href: '/admin/plans', icon: CurrencyDollarIcon },
     { name: 'Abonnements', href: '/admin/subscriptions', icon: CreditCardIcon },
     { name: 'Équipes', href: '/admin/teams', icon: UserGroupIcon },
     { name: 'Activité', href: '/admin/activity', icon: DocumentIcon },
@@ -63,7 +64,6 @@ export default function AdminLayout({ children, user }) {
                                 <div className="h-8 w-8 rounded-full bg-tasho-primary text-white flex items-center justify-center text-sm font-semibold">
                                     {user.name.charAt(0).toUpperCase()}
                                 </div>
-                                {/* ✅ AJOUTER LE BOUTON DE DÉCONNEXION */}
                                 <Link
                                     href="/logout"
                                     method="post"
@@ -113,7 +113,6 @@ export default function AdminLayout({ children, user }) {
                             <p className="text-xs text-gray-500">Connecté en tant que</p>
                             <p className="text-sm font-medium text-gray-900">{user.email}</p>
                         </div>
-                        {/* ✅ AJOUTER UN BOUTON DE DÉCONNEXION DANS LE SIDEBAR AUSSI */}
                         <div className="mt-3">
                             <Link
                                 href="/logout"
