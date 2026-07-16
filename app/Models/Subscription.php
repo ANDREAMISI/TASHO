@@ -21,6 +21,7 @@ class Subscription extends Model
         'last_payment_at',
         'next_payment_at',
         'notes',
+        'currency',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class Subscription extends Model
         'last_payment_at' => 'datetime',
         'next_payment_at' => 'datetime',
         'amount' => 'decimal:2',
+        'amount' => 'integer',
     ];
 
     // Relations

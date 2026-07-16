@@ -28,6 +28,7 @@ class SubscriptionService
             'start_date' => $data['start_date'] ?? now(),
             'end_date' => $data['end_date'] ?? null,
             'amount' => $data['amount'] ?? 0,
+            'currency' => 'FBU',
             'payment_method' => $data['payment_method'] ?? null,
             'payment_data' => $data['payment_data'] ?? null,
             'last_payment_at' => $data['last_payment_at'] ?? null,

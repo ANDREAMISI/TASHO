@@ -18,6 +18,7 @@ class Plan extends Model
         'features',
         'price_monthly',
         'price_yearly',
+        'currency',
         'is_active',
         'sort_order',
     ];
@@ -29,23 +30,20 @@ class Plan extends Model
         'max_team_members' => 'integer',
         'max_projects' => 'integer',
         'max_file_size' => 'integer',
-        'price_monthly' => 'decimal:2',
-        'price_yearly' => 'decimal:2',
+        'price_monthly' => 'integer',
+        'price_yearly' => 'integer',
     ];
 
-    // Relations
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
     }
 
-    // Scopes
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    // Vérifications
     public function hasFeature(string $feature): bool
     {
         return isset($this->features[$feature]) && $this->features[$feature] === true;
@@ -54,5 +52,15 @@ class Plan extends Model
     public function isFree(): bool
     {
         return $this->price_monthly == 0 && $this->price_yearly == 0;
+    }
+
+    public function getFormattedPriceMonthly(): string
+    {
+        return number_format($this->price_monthly, 0, ',', ' ') . ' FBU';
+    }
+
+    public function getFormattedPriceYearly(): string
+    {
+        return number_format($this->price_yearly, 0, ',', ' ') . ' FBU';
     }
 }

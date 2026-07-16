@@ -83,6 +83,7 @@ class SubscriptionController extends Controller
                     'status_color' => $this->getStatusColor($subscription->status),
                     'billing_cycle' => $subscription->billing_cycle,
                     'amount' => $subscription->amount,
+                    'amount_formatted' => $this->formatAmount($subscription->amount),
                     'start_date' => $subscription->start_date,
                     'end_date' => $subscription->end_date,
                     'last_payment_at' => $subscription->last_payment_at,
@@ -113,13 +114,15 @@ class SubscriptionController extends Controller
     {
         $this->checkSuperAdmin();
 
-        $plans = Plan::where('is_active', true)->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly']);
-        $teams = Team::with('owner')->get(['id', 'name', 'owner_id']);
-        $users = User::all(['id', 'name', 'email']);
+        $plans = Plan::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']);
+            
+        $users = User::orderBy('name')
+            ->get(['id', 'name', 'email']);
 
         return Inertia::render('Admin/Subscriptions/Create', [
             'plans' => $plans,
-            'teams' => $teams,
             'users' => $users,
             'billingCycles' => ['monthly', 'yearly'],
             'statuses' => ['active', 'inactive', 'expired', 'cancelled'],
@@ -135,36 +138,46 @@ class SubscriptionController extends Controller
 
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'team_id' => 'required|exists:teams,id',
             'plan_id' => 'required|exists:plans,id',
             'status' => 'required|in:active,inactive,expired,cancelled',
             'billing_cycle' => 'required|in:monthly,yearly',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after:start_date',
-            'amount' => 'nullable|numeric|min:0',
+            'amount' => 'nullable|integer|min:0',
             'payment_method' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
         ]);
 
         $plan = Plan::findOrFail($request->plan_id);
+        $user = User::findOrFail($request->user_id);
+        
+        // Récupérer la première équipe de l'utilisateur
+        $team = $user->teams()->first();
+        
+        if (!$team) {
+            return back()->withErrors([
+                'user_id' => 'Cet utilisateur n\'appartient à aucune équipe.'
+            ]);
+        }
+
+        // Montant en FBU
         $amount = $request->amount ?? ($request->billing_cycle === 'monthly' 
             ? $plan->price_monthly 
             : $plan->price_yearly);
 
-        $subscription = $this->subscriptionService->createSubscription(
-            $request->user_id,
-            $request->team_id,
-            $request->plan_id,
-            [
-                'status' => $request->status,
-                'billing_cycle' => $request->billing_cycle,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'amount' => $amount,
-                'payment_method' => $request->payment_method,
-                'notes' => $request->notes,
-            ]
-        );
+        $subscription = Subscription::create([
+            'user_id' => $request->user_id,
+            'team_id' => $team->id,
+            'plan_id' => $request->plan_id,
+            'status' => $request->status,
+            'billing_cycle' => $request->billing_cycle,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'amount' => $amount,
+            'currency' => 'FBU',
+            'payment_method' => $request->payment_method,
+            'notes' => $request->notes,
+        ]);
 
         return redirect()->route('admin.subscriptions.index')
             ->with('success', 'Abonnement créé avec succès !');
@@ -190,6 +203,7 @@ class SubscriptionController extends Controller
                 'status_color' => $this->getStatusColor($subscription->status),
                 'billing_cycle' => $subscription->billing_cycle,
                 'amount' => $subscription->amount,
+                'amount_formatted' => $this->formatAmount($subscription->amount),
                 'payment_method' => $subscription->payment_method,
                 'payment_data' => $subscription->payment_data,
                 'start_date' => $subscription->start_date,
@@ -209,6 +223,43 @@ class SubscriptionController extends Controller
     }
 
     /**
+     * Afficher le formulaire de modification
+     */
+    public function edit(Subscription $subscription)
+    {
+        $this->checkSuperAdmin();
+
+        $subscription->load(['user', 'team', 'plan']);
+
+        $plans = Plan::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']);
+            
+        $users = User::orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        return Inertia::render('Admin/Subscriptions/Edit', [
+            'subscription' => [
+                'id' => $subscription->id,
+                'user_id' => $subscription->user_id,
+                'team_id' => $subscription->team_id,
+                'plan_id' => $subscription->plan_id,
+                'status' => $subscription->status,
+                'billing_cycle' => $subscription->billing_cycle,
+                'start_date' => $subscription->start_date ? $subscription->start_date->format('Y-m-d') : null,
+                'end_date' => $subscription->end_date ? $subscription->end_date->format('Y-m-d') : null,
+                'amount' => $subscription->amount,
+                'payment_method' => $subscription->payment_method,
+                'notes' => $subscription->notes,
+            ],
+            'plans' => $plans,
+            'users' => $users,
+            'billingCycles' => ['monthly', 'yearly'],
+            'statuses' => ['active', 'inactive', 'expired', 'cancelled'],
+        ]);
+    }
+
+    /**
      * Mettre à jour un abonnement
      */
     public function update(Request $request, Subscription $subscription)
@@ -221,7 +272,7 @@ class SubscriptionController extends Controller
             'billing_cycle' => 'required|in:monthly,yearly',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after:start_date',
-            'amount' => 'nullable|numeric|min:0',
+            'amount' => 'nullable|integer|min:0',
             'payment_method' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
         ]);
@@ -242,7 +293,8 @@ class SubscriptionController extends Controller
             'notes' => $request->notes,
         ]);
 
-        return back()->with('success', 'Abonnement mis à jour avec succès !');
+        return redirect()->route('admin.subscriptions.index')
+            ->with('success', 'Abonnement mis à jour avec succès !');
     }
 
     /**
@@ -273,6 +325,15 @@ class SubscriptionController extends Controller
             : 'Abonnement désactivé avec succès !';
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Formater le montant en FBU
+     */
+    private function formatAmount($amount)
+    {
+        if ($amount === 0) return 'Gratuit';
+        return number_format($amount, 0, ',', ' ') . ' FBU';
     }
 
     /**

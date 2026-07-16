@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesSeeder::class,
             PlansSeeder::class,
+            AdminUserSeeder::class, // ✅ Ajouter cette ligne
         ]);
     }
 }

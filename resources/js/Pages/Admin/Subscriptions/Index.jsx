@@ -58,6 +58,17 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
         }
     };
 
+    // ✅ Formatage du montant en FBU
+    const formatAmount = (amount) => {
+        if (amount === 0) return 'Gratuit';
+        return new Intl.NumberFormat('fr-BI', {
+            style: 'currency',
+            currency: 'BIF',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(amount);
+    };
+
     return (
         <AdminLayout user={auth.user}>
             <Head title="Abonnements - Administration" />
@@ -123,6 +134,7 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                                     >
                                         <option value="">Tous</option>
                                         {plans.map((plan) => (
+                                            // ✅ Correction : supprimer la parenthèse fermante en trop
                                             <option key={plan.id} value={plan.id}>
                                                 {plan.name}
                                             </option>
@@ -219,8 +231,8 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        {subscription.amount} €
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {formatAmount(subscription.amount)}
                                                     </div>
                                                     <div className="text-xs text-gray-400">
                                                         / {subscription.billing_cycle}

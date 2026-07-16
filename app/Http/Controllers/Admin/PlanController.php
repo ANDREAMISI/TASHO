@@ -20,11 +20,54 @@ class PlanController extends Controller
         }
     }
 
+    /**
+     * Formater le stockage en unités lisibles
+     */
+    private function formatStorage($bytes)
+    {
+        if ($bytes === 0) return '0 B';
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = floor(log($bytes, 1024));
+        return round($bytes / pow(1024, $i), 2) . ' ' . $units[$i];
+    }
+
+    /**
+     * Formater le prix en FBU
+     */
+    private function formatPrice($price)
+    {
+        if ($price === 0) return 'Gratuit';
+        return number_format($price, 0, ',', ' ') . ' FBU';
+    }
+
     public function index()
     {
         $this->checkSuperAdmin();
 
-        $plans = Plan::orderBy('sort_order')->get();
+        $plans = Plan::orderBy('sort_order')->get()->map(function ($plan) {
+            return [
+                'id' => $plan->id,
+                'name' => $plan->name,
+                'slug' => $plan->slug,
+                'description' => $plan->description,
+                'storage_limit' => $plan->storage_limit,
+                'storage_human' => $this->formatStorage($plan->storage_limit),
+                'max_team_members' => $plan->max_team_members,
+                'max_projects' => $plan->max_projects,
+                'max_file_size' => $plan->max_file_size,
+                'max_file_size_human' => $this->formatStorage($plan->max_file_size),
+                'price_monthly' => $plan->price_monthly,
+                'price_monthly_formatted' => $this->formatPrice($plan->price_monthly),
+                'price_yearly' => $plan->price_yearly,
+                'price_yearly_formatted' => $this->formatPrice($plan->price_yearly),
+                'currency' => $plan->currency ?? 'FBU',
+                'is_active' => $plan->is_active,
+                'features' => $plan->features,
+                'sort_order' => $plan->sort_order,
+                'created_at' => $plan->created_at,
+                'updated_at' => $plan->updated_at,
+            ];
+        });
 
         return Inertia::render('Admin/Plans/Index', [
             'plans' => $plans,
@@ -51,13 +94,27 @@ class PlanController extends Controller
             'max_projects' => 'integer|nullable',
             'max_file_size' => 'required|integer|min:0',
             'features' => 'nullable|array',
-            'price_monthly' => 'required|numeric|min:0',
-            'price_yearly' => 'required|numeric|min:0',
+            'price_monthly' => 'required|integer|min:0',
+            'price_yearly' => 'required|integer|min:0',
             'is_active' => 'boolean',
             'sort_order' => 'integer|nullable',
         ]);
 
-        $plan = Plan::create($validated);
+        $plan = Plan::create([
+            'name' => $validated['name'],
+            'slug' => $validated['slug'],
+            'description' => $validated['description'],
+            'storage_limit' => $validated['storage_limit'],
+            'max_team_members' => $validated['max_team_members'],
+            'max_projects' => $validated['max_projects'] ?? -1,
+            'max_file_size' => $validated['max_file_size'],
+            'features' => $validated['features'] ?? [],
+            'price_monthly' => $validated['price_monthly'],
+            'price_yearly' => $validated['price_yearly'],
+            'currency' => 'FBU',
+            'is_active' => $validated['is_active'] ?? true,
+            'sort_order' => $validated['sort_order'] ?? 0,
+        ]);
 
         return redirect()->route('admin.plans.index')
             ->with('success', 'Plan créé avec succès !');
@@ -68,7 +125,27 @@ class PlanController extends Controller
         $this->checkSuperAdmin();
 
         return Inertia::render('Admin/Plans/Show', [
-            'plan' => $plan,
+            'plan' => [
+                'id' => $plan->id,
+                'name' => $plan->name,
+                'slug' => $plan->slug,
+                'description' => $plan->description,
+                'storage_limit' => $plan->storage_limit,
+                'storage_human' => $this->formatStorage($plan->storage_limit),
+                'max_team_members' => $plan->max_team_members,
+                'max_projects' => $plan->max_projects,
+                'max_file_size' => $plan->max_file_size,
+                'max_file_size_human' => $this->formatStorage($plan->max_file_size),
+                'price_monthly' => $plan->price_monthly,
+                'price_monthly_formatted' => $this->formatPrice($plan->price_monthly),
+                'price_yearly' => $plan->price_yearly,
+                'price_yearly_formatted' => $this->formatPrice($plan->price_yearly),
+                'currency' => $plan->currency,
+                'is_active' => $plan->is_active,
+                'features' => $plan->features,
+                'sort_order' => $plan->sort_order,
+                'created_at' => $plan->created_at,
+            ],
         ]);
     }
 
@@ -77,7 +154,24 @@ class PlanController extends Controller
         $this->checkSuperAdmin();
 
         return Inertia::render('Admin/Plans/Edit', [
-            'plan' => $plan,
+            'plan' => [
+                'id' => $plan->id,
+                'name' => $plan->name,
+                'slug' => $plan->slug,
+                'description' => $plan->description,
+                'storage_limit' => $plan->storage_limit,
+                'storage_human' => $this->formatStorage($plan->storage_limit),
+                'max_team_members' => $plan->max_team_members,
+                'max_projects' => $plan->max_projects,
+                'max_file_size' => $plan->max_file_size,
+                'max_file_size_human' => $this->formatStorage($plan->max_file_size),
+                'price_monthly' => $plan->price_monthly,
+                'price_yearly' => $plan->price_yearly,
+                'currency' => $plan->currency,
+                'is_active' => $plan->is_active,
+                'features' => $plan->features,
+                'sort_order' => $plan->sort_order,
+            ],
         ]);
     }
 
@@ -94,8 +188,8 @@ class PlanController extends Controller
             'max_projects' => 'integer|nullable',
             'max_file_size' => 'required|integer|min:0',
             'features' => 'nullable|array',
-            'price_monthly' => 'required|numeric|min:0',
-            'price_yearly' => 'required|numeric|min:0',
+            'price_monthly' => 'required|integer|min:0',
+            'price_yearly' => 'required|integer|min:0',
             'is_active' => 'boolean',
             'sort_order' => 'integer|nullable',
         ]);

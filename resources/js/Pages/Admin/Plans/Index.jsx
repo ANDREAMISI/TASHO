@@ -32,15 +32,31 @@ export default function PlansIndex({ auth, plans }) {
         }
     };
 
+    // ✅ Formatage des prix en Franc Burundais (FBU)
     const formatPrice = (price) => {
-        return price === 0 ? 'Gratuit' : price + ' €';
+        if (price === 0) return 'Gratuit';
+        return new Intl.NumberFormat('fr-BI', {
+            style: 'currency',
+            currency: 'BIF',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(price);
     };
 
+    // ✅ Formatage du stockage
     const formatStorage = (bytes) => {
         if (bytes === 0) return '0 B';
         const units = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(1024));
         return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
+    };
+
+    // ✅ Calcul de la réduction annuelle
+    const calculateDiscount = (monthly, yearly) => {
+        if (monthly === 0 || yearly === 0) return 0;
+        const yearlyMonthlyEquivalent = monthly * 12;
+        if (yearly >= yearlyMonthlyEquivalent) return 0;
+        return Math.round((1 - yearly / yearlyMonthlyEquivalent) * 100);
     };
 
     return (
@@ -69,110 +85,111 @@ export default function PlansIndex({ auth, plans }) {
                     {/* Plans Grid */}
                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {plans && plans.length > 0 ? (
-                            plans.map((plan) => (
-                                <div
-                                    key={plan.id}
-                                    className={`bg-white shadow-sm rounded-lg overflow-hidden hover:shadow-md transition ${
-                                        !plan.is_active ? 'opacity-60' : ''
-                                    }`}
-                                >
-                                    <div className="p-6">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="text-lg font-bold text-gray-900">
-                                                    {plan.name}
-                                                </h3>
-                                                <p className="text-sm text-gray-500">
-                                                    {plan.description || 'Aucune description'}
-                                                </p>
-                                            </div>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                plan.is_active
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                            }`}>
-                                                {plan.is_active ? 'Actif' : 'Inactif'}
-                                            </span>
-                                        </div>
-
-                                        <div className="mt-4 flex items-end justify-between">
-                                            <div>
-                                                <p className="text-3xl font-bold text-tasho-primary">
-                                                    {formatPrice(plan.price_monthly)}
-                                                </p>
-                                                <p className="text-xs text-gray-400">
-                                                    {plan.price_yearly > 0 ? formatPrice(plan.price_yearly) + '/an' : ''}
-                                                </p>
-                                            </div>
-                                            <span className="text-sm text-gray-500">
-                                                {plan.price_yearly > 0 && plan.price_yearly < plan.price_monthly * 12 ? (
-                                                    <span className="text-green-600 font-medium">
-                                                        -{Math.round((1 - plan.price_yearly / (plan.price_monthly * 12)) * 100)}%
-                                                    </span>
-                                                ) : null}
-                                            </span>
-                                        </div>
-
-                                        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                                            <div className="flex items-center text-gray-600">
-                                                <FolderIcon className="h-4 w-4 mr-1 text-gray-400" />
-                                                {formatStorage(plan.storage_limit)}
-                                            </div>
-                                            <div className="flex items-center text-gray-600">
-                                                <UsersIcon className="h-4 w-4 mr-1 text-gray-400" />
-                                                {plan.max_team_members === -1 ? 'Illimité' : plan.max_team_members} membres
-                                            </div>
-                                            <div className="flex items-center text-gray-600">
-                                                <BoltIcon className="h-4 w-4 mr-1 text-gray-400" />
-                                                {plan.max_projects === -1 ? 'Illimité' : plan.max_projects} projets
-                                            </div>
-                                            <div className="flex items-center text-gray-600">
-                                                <CreditCardIcon className="h-4 w-4 mr-1 text-gray-400" />
-                                                {formatStorage(plan.max_file_size)} par fichier
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-end space-x-2">
-                                            <Link
-                                                href={route('admin.plans.show', plan.id)}
-                                                className="p-2 text-gray-400 hover:text-gray-600 transition"
-                                                title="Voir"
-                                            >
-                                                <EyeIcon className="h-4 w-4" />
-                                            </Link>
-                                            <Link
-                                                href={route('admin.plans.edit', plan.id)}
-                                                className="p-2 text-gray-400 hover:text-gray-600 transition"
-                                                title="Modifier"
-                                            >
-                                                <PencilIcon className="h-4 w-4" />
-                                            </Link>
-                                            <button
-                                                onClick={() => togglePlan(plan)}
-                                                className={`p-2 transition ${
+                            plans.map((plan) => {
+                                const discount = calculateDiscount(plan.price_monthly, plan.price_yearly);
+                                return (
+                                    <div
+                                        key={plan.id}
+                                        className={`bg-white shadow-sm rounded-lg overflow-hidden hover:shadow-md transition ${
+                                            !plan.is_active ? 'opacity-60' : ''
+                                        }`}
+                                    >
+                                        <div className="p-6">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-gray-900">
+                                                        {plan.name}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-500">
+                                                        {plan.description || 'Aucune description'}
+                                                    </p>
+                                                </div>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                                     plan.is_active
-                                                        ? 'text-yellow-400 hover:text-yellow-600'
-                                                        : 'text-green-400 hover:text-green-600'
-                                                }`}
-                                                title={plan.is_active ? 'Désactiver' : 'Activer'}
-                                            >
-                                                {plan.is_active ? (
-                                                    <XMarkIcon className="h-4 w-4" />
-                                                ) : (
-                                                    <CheckIcon className="h-4 w-4" />
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                    {plan.is_active ? 'Actif' : 'Inactif'}
+                                                </span>
+                                            </div>
+
+                                            <div className="mt-4 flex items-end justify-between">
+                                                <div>
+                                                    <p className="text-3xl font-bold text-tasho-primary">
+                                                        {formatPrice(plan.price_monthly)}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {plan.price_yearly > 0 ? formatPrice(plan.price_yearly) + '/an' : ''}
+                                                    </p>
+                                                </div>
+                                                {discount > 0 && (
+                                                    <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                                        -{discount}%
+                                                    </span>
                                                 )}
-                                            </button>
-                                            <button
-                                                onClick={() => deletePlan(plan)}
-                                                className="p-2 text-red-400 hover:text-red-600 transition"
-                                                title="Supprimer"
-                                            >
-                                                <TrashIcon className="h-4 w-4" />
-                                            </button>
+                                            </div>
+
+                                            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                                                <div className="flex items-center text-gray-600">
+                                                    <FolderIcon className="h-4 w-4 mr-1 text-gray-400" />
+                                                    {formatStorage(plan.storage_limit)}
+                                                </div>
+                                                <div className="flex items-center text-gray-600">
+                                                    <UsersIcon className="h-4 w-4 mr-1 text-gray-400" />
+                                                    {plan.max_team_members === -1 ? 'Illimité' : plan.max_team_members} membres
+                                                </div>
+                                                <div className="flex items-center text-gray-600">
+                                                    <BoltIcon className="h-4 w-4 mr-1 text-gray-400" />
+                                                    {plan.max_projects === -1 ? 'Illimité' : plan.max_projects} projets
+                                                </div>
+                                                <div className="flex items-center text-gray-600">
+                                                    <CreditCardIcon className="h-4 w-4 mr-1 text-gray-400" />
+                                                    {formatStorage(plan.max_file_size)} par fichier
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-end space-x-2">
+                                                <Link
+                                                    href={route('admin.plans.show', plan.id)}
+                                                    className="p-2 text-gray-400 hover:text-gray-600 transition"
+                                                    title="Voir"
+                                                >
+                                                    <EyeIcon className="h-4 w-4" />
+                                                </Link>
+                                                <Link
+                                                    href={route('admin.plans.edit', plan.id)}
+                                                    className="p-2 text-gray-400 hover:text-gray-600 transition"
+                                                    title="Modifier"
+                                                >
+                                                    <PencilIcon className="h-4 w-4" />
+                                                </Link>
+                                                <button
+                                                    onClick={() => togglePlan(plan)}
+                                                    className={`p-2 transition ${
+                                                        plan.is_active
+                                                            ? 'text-yellow-400 hover:text-yellow-600'
+                                                            : 'text-green-400 hover:text-green-600'
+                                                    }`}
+                                                    title={plan.is_active ? 'Désactiver' : 'Activer'}
+                                                >
+                                                    {plan.is_active ? (
+                                                        <XMarkIcon className="h-4 w-4" />
+                                                    ) : (
+                                                        <CheckIcon className="h-4 w-4" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={() => deletePlan(plan)}
+                                                    className="p-2 text-red-400 hover:text-red-600 transition"
+                                                    title="Supprimer"
+                                                >
+                                                    <TrashIcon className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="col-span-3 text-center py-12">
                                 <div className="flex justify-center">
