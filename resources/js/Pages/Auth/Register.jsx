@@ -8,6 +8,8 @@ import PrimaryButton from "@/Components/PrimaryButton";
 // Importation de l'icône utilisateur
 import { FaUser } from "react-icons/fa";
 import { FaBriefcase } from "react-icons/fa";
+import { FaCloud, FaImages, FaLock } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 export default function Register({ professions, workTypes, storageVolumes }) {
     // État pour gérer l'onglet actif ('perso' par défaut)
@@ -36,50 +38,89 @@ export default function Register({ professions, workTypes, storageVolumes }) {
         post(route("register"));
     };
 
+    const itemVariants = {
+        hidden: { opacity: 0, y: 18 },
+        show: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.65,
+                ease: "easeInOut",
+            },
+        },
+    };
+
+    const sectionVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.18,
+                delayChildren: 0.12,
+                ease: "easeInOut",
+            },
+        },
+    };
+
     return (
         <>
             <Head title="Inscription" />
 
-            <div className="w-full bg-[#fff] flex items-center justify-center px-2 py-4">
-                <div className="w-full max-w-5xl rounded-[35px] overflow-hidden shadow-2xl grid lg:grid-cols-2 border  bg-gradient-to-br from-slate-950/95 to-slate-900/95">
-                    <div className="relative bg-gradient-to-br from-[#eef5ff] via-[#f7fbff] to-[#dbeafe]  flex flex-col justify-between gap-2 p-6">
-                        <div>
+            <div className="min-h-screen bg-[url(/images/bg-total.png)] bg-cover bg-center flex items-center justify-center px-4 py-8">
+                <div className="w-full max-w-5xl rounded-[35px] overflow-hidden shadow-2xl shadow-blue-600 grid lg:grid-cols-2 border  bg-gradient-to-br from-slate-950/95 to-slate-900/95">
+                    {/* ================= LEFT ================= */}
+                    <motion.div
+                        variants={sectionVariants}
+                        initial="hidden"
+                        animate="show"
+                        className="relative bg-gradient-to-br from-[#fff] via-[#fff] to-[#fff] p-6 md:p-8 flex flex-col justify-between gap-1 overflow-y-auto"
+                    >
+                        {/* Logo */}
+                        <motion.div variants={itemVariants}>
                             <img
                                 src="/images/logo.png"
                                 alt="TASHO"
-                                className="w-32"
+                                className="w-24 md:w-28"
                             />
-                        </div>
+                        </motion.div>
 
-                        <div className="flex justify-center items-center">
-                            <img
-                                src="/images/camera1.png"
-                                alt="Camera"
-                                className="w-full max-w-[260px] h-auto object-contain drop-shadow-[0_35px_70px_rgba(0,0,0,0.25)] transition duration-500 hover:scale-105"
+                        {/* Hero Image */}
+                        <motion.div
+                            variants={itemVariants}
+                            className="flex justify-center my-1 md:my-2 relative"
+                        >
+                           
+
+                            <motion.img
+                                src="/images/img-register1.png"
+                                alt="Hero"
+                                className="w-full max-h-[300px] md:max-h-[400px] object-contain mx-auto relative z-10"
+                                
                             />
-                        </div>
+                        </motion.div>
 
-                        <div>
-                            <h1 className=" text-2xl font-extrabold leading-tight">
-                                Protégez{" "}
-                                <span className="text-blue-600">
-                                    vos souvenirs,
-                                </span>
+                        {/* Title */}
+                        <motion.div variants={itemVariants} className="mb-2">
+                            <h1 className="text-xl md:text-2xl font-extrabold leading-tight">
+                                Commencez votre
                                 <br />
-                                Organisez{" "}
-                                <span className="text-cyan-500">
-                                    vos créations.
+                                <span className="text-blue-600">
+                                    aventure numérique
                                 </span>
+                                .
                             </h1>
+                        </motion.div>
 
-                            <p className=" text-gray-600 max-w-md">
-                                <em>
-                                    Rejoignez TASHO et sauvegardez vos fichiers
-                                    multimédias en toute sécurité.
-                                </em>
+                        {/* Subtitle */}
+                        <motion.div variants={itemVariants} className="">
+                            <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                                <em> Sauvegardez, organisez et partagez vos médias
+                                facilement.</em>  
                             </p>
-                        </div>
-                    </div>
+                        </motion.div>
+                    </motion.div>
+
+                    {/* ================= RIGHT ================= */}
 
                     <div className="bg-[#071321] flex items-center justify-center px-6 py-6">
                         <div className="w-full max-w-md">

@@ -3,8 +3,16 @@ import InputError from "@/Components/InputError";
 import PrimaryButton from "@/Components/PrimaryButton";
 import TextInput from "@/Components/TextInput";
 import { Head, Link, useForm } from "@inertiajs/react";
-import { FaEnvelope, FaLock } from "react-icons/fa";
+import {
+    FaCloud,
+    FaEnvelope,
+    FaFolder,
+    FaImages,
+    FaLock,
+    FaThLarge,
+} from "react-icons/fa";
 import { HiEye, HiEyeOff } from "react-icons/hi";
+import { motion } from "framer-motion";
 import { useState } from "react";
 
 export default function Login({ status }) {
@@ -24,138 +32,295 @@ export default function Login({ status }) {
         });
     };
 
+    const pageVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.18,
+                ease: "easeInOut",
+            },
+        },
+    };
+
+    const sectionVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.18,
+                delayChildren: 0.12,
+                ease: "easeInOut",
+            },
+        },
+    };
+
+    const rightSectionVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                delayChildren: 0.5,
+                staggerChildren: 0.12,
+                ease: "easeInOut",
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 18 },
+        show: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.65,
+                ease: "easeInOut",
+            },
+        },
+    };
+
+    const formVariants = {
+        hidden: { opacity: 0, y: 60 },
+        show: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.8,
+                ease: "easeInOut",
+            },
+        },
+    };
+
+    const bgAnimation = {
+        backgroundPosition: ["50% 50%", "48% 52%", "50% 50%"],
+    };
+
+    const bgTransition = {
+        duration: 30,
+        ease: "easeInOut",
+        repeat: Infinity,
+        repeatType: "reverse",
+    };
+
     return (
         <>
             <Head title="Connexion" />
 
-            <div className="min-h-screen bg-[#edf3fb] flex items-center justify-center px-4 py-8">
-
-                <div className="w-full max-w-5xl h-[88vh] bg-white rounded-[30px] overflow-hidden shadow-2xl grid lg:grid-cols-2">
+            <motion.div
+                className="min-h-screen bg-[url(/images/bg-total.png)] bg-cover bg-center flex items-center justify-center px-4 py-8"
+                style={{ backgroundPosition: "50% 50%" }}
+                animate={bgAnimation}
+                transition={bgTransition}
+            >
+                <motion.div
+                    initial="hidden"
+                    animate="show"
+                    variants={pageVariants}
+                    className="w-full max-w-5xl shadow-blue-600  min-h-[80vh] lg:h-[88vh] bg-white rounded-[30px] overflow-hidden shadow-2xl grid grid-cols-1 lg:grid-cols-2"
+                >
                     {/* ================= LEFT ================= */}
 
-                    <div className="relative bg-gradient-to-br from-[#eef5ff] via-[#f7fbff] to-[#dbeafe] p-12 flex flex-col justify-between">
-
+                    <motion.div
+                        variants={sectionVariants}
+                        className="relative bg-gradient-to-br from-[#f8fbff] via-[#f5f9ff] to-[#edf4ff] p-6 md:p-8 flex flex-col justify-between overflow-y-auto"
+                    >
                         {/* Logo */}
-
-                        <div>
+                        <motion.div variants={itemVariants}>
                             <img
                                 src="/images/logo.png"
                                 alt="TASHO"
-                                className="w-32"
+                                className="w-24 md:w-28"
                             />
-                        </div>
+                        </motion.div>
 
-                        {/* Camera */}
+                        {/* Hero Image */}
+                        <motion.div
+                            variants={itemVariants}
+                            className="flex justify-center my-4 relative"
+                        >
+                            {/* Animated Border Glow */}
+                            <motion.div
+                                className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400 p-[2px] opacity-0"
+                                animate={{
+                                    opacity: [0.5, 1, 0.5],
+                                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                                }}
+                                transition={{
+                                    duration: 4,
+                                    ease: "easeInOut",
+                                    repeat: Infinity,
+                                }}
+                                style={{
+                                    backgroundSize: "200% 200%",
+                                }}
+                            >
+                                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#f8fbff] via-[#f5f9ff] to-[#edf4ff]" />
+                            </motion.div>
 
-                        <div className="flex justify-center ">
+                            <motion.img
+                                src="/images/hero-logo2.png"
+                                alt="Hero"
+                                className="w-full max-h-[280px] md:max-h-[380px] object-contain mx-auto relative z-10"
+                                animate={{
+                                    filter: ["drop-shadow(0 0 0px rgba(59,130,246,0))", "drop-shadow(0 0 20px rgba(59,130,246,0.4))", "drop-shadow(0 0 0px rgba(59,130,246,0))"],
+                                }}
+                                transition={{
+                                    duration: 3,
+                                    ease: "easeInOut",
+                                    repeat: Infinity,
+                                }}
+                            />
+                        </motion.div>
 
-                            <img
-                                src="/images/camera1.png"
-                                alt="Camera"
-                                className="max-h-[330px] object-contain mx-auto drop-shadow-[0_35px_70px_rgba(0,0,0,0.25)] transition duration-500 hover:scale-105"
-                               />
-
-                        </div>
-
-                        {/* Text */}
-
-                        <div>
-
-                            <h1 className="text-2xl font-extrabold leading-tight">
-                                
-
-
-                                Protégez {" "}
-
-                                <span className="text-blue-600">
-                                    vos souvenirs,
-                                </span>
-
+                        {/* Title */}
+                        <motion.div variants={itemVariants}>
+                            <h1 className="text-xl md:text-2xl font-extrabold leading-tight">
+                                Vos photos méritent
                                 <br />
-
-                                Organisez {" "}
-
-                                <span className="text-cyan-500">
-                                    vos créations.
+                                un{" "}
+                                <span className="text-blue-600">
+                                    espace sécurisé
                                 </span>
-
+                                .
                             </h1>
-                            
+                        </motion.div>
 
-                            <p className="mt-4 text-gray-600 max-w-md">
-
-                            <em>Rejoignez TASHO et sauvegardez vos fichiers multimédias en toute sécurité.</em>
-                               
+                        {/* Subtitle */}
+                        <motion.div variants={itemVariants}>
+                            <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                                <em>Sauvegardez, organisez et partagez vos créations
+                                    professionnelles en toute sécurité.</em>  
                             </p>
 
-                        </div>
+                        </motion.div>
 
-                    </div>
+                        {/* Glass Cards */}
+                        <motion.div
+                            variants={itemVariants}
+                            className="space-y-3"
+                        >
+                            {/* Card 1 - Sécurisé */}
+                            {/* <motion.div
+                                className="bg-white/40 backdrop-blur-md rounded-2xl p-4 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-white/50 hover:scale-105"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="flex-shrink-0">
+                                        <FaLock className="text-blue-600 text-lg mt-1" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-800 text-sm">
+                                            Sécurisé
+                                        </h3>
+                                        <p className="text-xs text-gray-600 mt-1">
+                                            Vos fichiers sont protégés à 100%.
+                                        </p>
+                                    </div>
+                                </div>
+                            </motion.div> */}
+
+                            {/* Card 2 - Accessible */}
+                            {/* <motion.div
+                                className="bg-white/40 backdrop-blur-md rounded-2xl p-4 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-white/50 hover:scale-105"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="flex-shrink-0">
+                                        <FaCloud className="text-blue-600 text-lg mt-1" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-800 text-sm">
+                                            Accessible
+                                        </h3>
+                                        <p className="text-xs text-gray-600 mt-1">
+                                            Accédez à vos photos partout.
+                                        </p>
+                                    </div>
+                                </div>
+                            </motion.div> */}
+
+                            {/* Card 3 - Organisé */}
+                            {/* <motion.div
+                                className="bg-white/40 backdrop-blur-md rounded-2xl p-4 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-white/50 hover:scale-105"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="flex-shrink-0">
+                                        <FaImages className="text-blue-600 text-lg mt-1" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-800 text-sm">
+                                            Organisé
+                                        </h3>
+                                        <p className="text-xs text-gray-600 mt-1">
+                                            Retrouvez rapidement toutes vos
+                                            créations.
+                                        </p>
+                                    </div>
+                                </div>
+                            </motion.div> */}
+                        </motion.div>
+                    </motion.div>
 
                     {/* ================= RIGHT ================= */}
-
-                    <div className="bg-[#071321] flex items-center justify-center px-10 py-8">
-
+                    <motion.div
+                        variants={rightSectionVariants}
+                        className="bg-[#071321] flex items-center justify-center px-6 py-8 md:px-10 md:py-10"
+                    >
                         <div className="w-full max-w-lg">
-
-                            <h2 className="text-4xl font-bold text-white text-center mb-10">
-
+                            <motion.h2
+                                variants={itemVariants}
+                                className="text-3xl md:text-4xl font-bold text-white text-center mb-8 md:mb-10"
+                            >
                                 Se{" "}
-
-                                <span className="text-blue-500">
-                                    connecter
-                                </span>
-
-                            </h2>
+                                <span className="text-blue-500">connecter</span>
+                            </motion.h2>
 
                             {status && (
-                                <div className="mb-5 rounded-lg bg-green-500/20 border border-green-500 text-green-300 px-4 py-3">
+                                <motion.div
+                                    variants={itemVariants}
+                                    className="mb-5 rounded-lg bg-green-500/20 border border-green-500 text-green-300 px-4 py-3"
+                                >
                                     {status}
-                                </div>
+                                </motion.div>
                             )}
 
-                            <form
+                            <motion.form
                                 onSubmit={submit}
                                 className="space-y-6"
+                                variants={formVariants}
+                                initial="hidden"
+                                animate="show"
                             >
-
                                 {/* EMAIL */}
-
-                                <div>
-
+                                <motion.div variants={itemVariants}>
                                     <div className="relative">
-
-                                        <FaEnvelope className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
 
                                         <TextInput
                                             type="email"
                                             value={data.email}
                                             onChange={(e) =>
-                                                setData(
-                                                    "email",
-                                                    e.target.value
-                                                )
+                                                setData("email", e.target.value)
                                             }
                                             placeholder="Adresse email"
-                                            className="w-full h-14 rounded-xl bg-transparent border border-slate-600 pl-14 pr-4 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                                            className="w-full h-14 rounded-xl bg-transparent border border-slate-600 pl-12 pr-4 text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/40 focus:shadow-[0_0_20px_rgba(59,130,246,0.35)] transition-all duration-300"
                                         />
-
                                     </div>
 
                                     <InputError
                                         message={errors.email}
                                         className="mt-2"
                                     />
-
-                                </div>
+                                </motion.div>
 
                                 {/* PASSWORD */}
-
-                                <div>
-
+                                <motion.div variants={itemVariants}>
                                     <div className="relative">
-
-                                        <FaLock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
 
                                         <TextInput
                                             type={
@@ -167,19 +332,17 @@ export default function Login({ status }) {
                                             onChange={(e) =>
                                                 setData(
                                                     "password",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             placeholder="Mot de passe"
-                                            className="w-full h-14 rounded-xl bg-transparent border border-slate-600 pl-14 pr-14 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                                            className="w-full h-14 rounded-xl bg-transparent border border-slate-600 pl-12 pr-14 text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/40 focus:shadow-[0_0_20px_rgba(59,130,246,0.35)] transition-all duration-300"
                                         />
 
                                         <button
                                             type="button"
                                             onClick={() =>
-                                                setShowPassword(
-                                                    !showPassword
-                                                )
+                                                setShowPassword(!showPassword)
                                             }
                                             className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                                         >
@@ -189,69 +352,75 @@ export default function Login({ status }) {
                                                 <HiEye size={22} />
                                             )}
                                         </button>
-
                                     </div>
 
                                     <InputError
                                         message={errors.password}
                                         className="mt-2"
                                     />
-
-                                </div>
+                                </motion.div>
 
                                 {/* REMEMBER */}
+                                <motion.div variants={itemVariants}>
+                                    <label className="flex items-center text-gray-300">
+                                        <Checkbox
+                                            checked={data.remember}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "remember",
+                                                    e.target.checked,
+                                                )
+                                            }
+                                        />
 
-                                <label className="flex items-center text-gray-300">
-
-                                    <Checkbox
-                                        checked={data.remember}
-                                        onChange={(e) =>
-                                            setData(
-                                                "remember",
-                                                e.target.checked
-                                            )
-                                        }
-                                    />
-
-                                    <span className="ml-3">
-                                        Se souvenir de moi
-                                    </span>
-
-                                </label>
+                                        <span className="ml-3">
+                                            Se souvenir de moi
+                                        </span>
+                                    </label>
+                                </motion.div>
 
                                 {/* BUTTON */}
-
-                                <PrimaryButton
-                                    disabled={processing}
-                                    className="w-full h-14 justify-center rounded-xl bg-gradient-to-r from-[#2563eb] to-[#38bdf8] text-lg font-semibold hover:scale-[1.02] transition duration-300 shadow-lg"
+                                <motion.div
+                                    variants={itemVariants}
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.96 }}
+                                    transition={{
+                                        duration: 0.2,
+                                        ease: "easeInOut",
+                                    }}
                                 >
-                                    Connexion
-                                </PrimaryButton>
+                                    <PrimaryButton
+                                        disabled={processing}
+                                        className="w-full h-14 justify-center rounded-xl bg-gradient-to-r from-[#2563eb] to-[#38bdf8] text-base md:text-lg font-semibold transition duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(59,130,246,0.35)]"
+                                    >
+                                        {processing ? (
+                                            <span className="inline-flex items-center gap-2">
+                                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white" />
+                                                Connexion...
+                                            </span>
+                                        ) : (
+                                            "Connexion"
+                                        )}
+                                    </PrimaryButton>
+                                </motion.div>
 
                                 {/* REGISTER */}
-
-                                <div className="text-center text-gray-400">
-
-                                    Pas encore inscrit ?
-
-                                    <Link
-                                        href={route("register")}
-                                        className="ml-2 text-blue-400 hover:text-cyan-400 transition"
-                                    >
-                                        Créer un compte
-                                    </Link>
-
-                                </div>
-
-                            </form>
-
+                                <motion.div variants={itemVariants}>
+                                    <div className="text-center text-gray-400">
+                                        Pas encore inscrit ?
+                                        <Link
+                                            href={route("register")}
+                                            className="ml-2 text-blue-400 hover:text-cyan-400 transition"
+                                        >
+                                            Créer un compte
+                                        </Link>
+                                    </div>
+                                </motion.div>
+                            </motion.form>
                         </div>
-
-                    </div>
-
-                </div>
-
-            </div>
+                    </motion.div>
+                </motion.div>
+            </motion.div>
         </>
     );
 }
