@@ -26,6 +26,7 @@ use Inertia\Inertia;
 | Routes Publiques - Pages Marketing
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/features', [PageController::class, 'features'])->name('features');
 Route::get('/pricing', [PageController::class, 'pricing'])->name('pricing');
@@ -35,7 +36,7 @@ Route::get('/pricing', [PageController::class, 'pricing'])->name('pricing');
 | Routes d'Authentification (Breeze)
 |--------------------------------------------------------------------------
 */
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -65,23 +66,23 @@ Route::get('/gallery/{token}/comments', [ShareController::class, 'getComments'])
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    
+
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
     // Invitations - Acceptation après inscription
     Route::post('/invitation/accept-after-registration', [InvitationController::class, 'acceptAfterRegistration'])
         ->name('invitation.accept-after-registration');
-    
+
     // Invitations - Génération de lien (API)
     Route::post('/invitation/generate-link', [InvitationController::class, 'generateLink'])
         ->name('invitation.generate-link');
-    
+
     // ============================================================
     // Routes Équipe
     // ============================================================
@@ -92,17 +93,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/{team}', [TeamController::class, 'show'])->name('show');
         Route::put('/{team}', [TeamController::class, 'update'])->name('update');
         Route::delete('/{team}', [TeamController::class, 'destroy'])->name('destroy');
-        
+
         // Invitations
         Route::post('/{team}/invitations', [TeamController::class, 'invite'])->name('invite');
         Route::delete('/invitations/{invitation}', [TeamController::class, 'cancelInvitation'])->name('cancel-invitation');
         Route::get('/invitations/{token}', [TeamController::class, 'acceptInvitation'])->name('accept-invitation');
-        
+
         // Membres
         Route::delete('/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('remove-member');
         Route::put('/{team}/members/{user}/role', [TeamController::class, 'updateRole'])->name('update-role');
     });
-    
+
     // ============================================================
     // Routes Projets
     // ============================================================
@@ -113,18 +114,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/{project}', [ProjectController::class, 'show'])->name('show');
         Route::put('/{project}', [ProjectController::class, 'update'])->name('update');
         Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('destroy');
-        
+
         // Dossiers
         Route::post('/{project}/folders', [ProjectController::class, 'createFolder'])->name('create-folder');
         Route::put('/folders/{folder}', [ProjectController::class, 'renameFolder'])->name('rename-folder');
         Route::delete('/folders/{folder}', [ProjectController::class, 'deleteFolder'])->name('delete-folder');
-        
+
         // Membres du projet
         Route::post('/{project}/members', [ProjectController::class, 'addMember'])->name('add-member');
         Route::delete('/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('remove-member');
         Route::put('/{project}/members/{user}/role', [ProjectController::class, 'updateMemberRole'])->name('update-member-role');
     });
-    
+
     // ============================================================
     // Routes Fichiers
     // ============================================================
@@ -148,13 +149,14 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/{project}', [FileController::class, 'index'])->name('index');
         Route::post('/upload', [FileController::class, 'upload'])->name('upload');
+        Route::post('/upload-chunk', [FileController::class, 'uploadChunk'])->name('upload.chunk');
         Route::get('/{file}/download', [FileController::class, 'download'])->name('download');
         Route::get('/{file}/preview', [FileController::class, 'preview'])->name('preview');
         Route::delete('/{file}', [FileController::class, 'destroy'])->name('destroy');
         Route::post('/{file}/favorite', [FileController::class, 'favorite'])->name('favorite');
         Route::put('/{file}', [FileController::class, 'update'])->name('update');
     });
-    
+
     // ============================================================
     // Routes Clients
     // ============================================================
@@ -164,7 +166,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{client}', [ClientController::class, 'update'])->name('update');
         Route::delete('/{client}', [ClientController::class, 'destroy'])->name('destroy');
     });
-    
+
     // ============================================================
     // Routes Partages
     // ============================================================
@@ -174,7 +176,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{access}', [ShareController::class, 'update'])->name('update');
         Route::delete('/{access}', [ShareController::class, 'revoke'])->name('revoke');
     });
-    
+
     // ============================================================
     // Routes Activité
     // ============================================================
@@ -183,7 +185,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/export', [ActivityController::class, 'export'])->name('export');
         Route::get('/{project}', [ActivityController::class, 'project'])->name('project');
     });
-    
+
     // ============================================================
     // Routes Paramètres (à venir)
     // ============================================================
@@ -204,7 +206,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::middleware([\App\Http\Middleware\SuperAdminMiddleware::class])->group(function () {
         // Dashboard Admin
         Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
-        
+
         // ============================================================
         // Gestion des utilisateurs
         // ============================================================
@@ -213,7 +215,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::post('/users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
-        
+
         // ============================================================
         // Gestion des équipes (Admin)
         // ============================================================
@@ -221,7 +223,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/teams/{team}', [AdminTeamController::class, 'show'])->name('teams.show');
         Route::delete('/teams/{team}', [AdminTeamController::class, 'destroy'])->name('teams.destroy');
         Route::post('/teams/{team}/toggle', [AdminTeamController::class, 'toggle'])->name('teams.toggle');
-        
+
         // ============================================================
         // Gestion des abonnements
         // ============================================================
@@ -233,7 +235,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
         Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
         Route::post('/subscriptions/{subscription}/toggle', [SubscriptionController::class, 'toggle'])->name('subscriptions.toggle');
-        
+
         // ============================================================
         // Gestion des plans
         // ============================================================
@@ -245,13 +247,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::put('/plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
         Route::delete('/plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
         Route::post('/plans/{plan}/toggle', [PlanController::class, 'toggle'])->name('plans.toggle');
-        
+
         // ============================================================
         // Activité Admin
         // ============================================================
         Route::get('/activity', [ActivityController::class, 'adminIndex'])->name('activity.index');
         Route::get('/activity/export', [ActivityController::class, 'adminExport'])->name('activity.export');
-        
+
         // ============================================================
         // Paramètres Admin
         // ============================================================
@@ -269,10 +271,10 @@ Route::middleware(['auth:sanctum'])->prefix('api')->name('api.')->group(function
     // Statistiques
     Route::get('/stats/project/{project}', [ApiController::class, 'projectStats'])->name('stats.project');
     Route::get('/stats/team', [ApiController::class, 'teamStats'])->name('stats.team');
-    
+
     // Recherche
     Route::get('/search', [SearchController::class, 'search'])->name('search');
-    
+
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');

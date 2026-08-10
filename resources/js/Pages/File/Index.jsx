@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import axios from 'axios';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -27,8 +28,10 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
     const [previewFile, setPreviewFile] = useState(null);
     const [uploadFile, setUploadFile] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadError, setUploadError] = useState(null);
     const fileInputRef = useRef(null);
-    
+
     const { data, setData, post, processing, errors, reset } = useForm({
         file: null,
         folder_id: currentFolder?.id || '',
@@ -68,47 +71,77 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
         return 'bg-gray-50 hover:bg-gray-100';
     };
 
-    // ✅ Version corrigée avec router.post
-    const handleUpload = (e) => {
+    const handleUpload = async (e) => {
         e.preventDefault();
-        
+
         if (!uploadFile) {
             alert('Veuillez sélectionner un fichier.');
             return;
         }
 
-        const formData = new FormData();
-        formData.append('file', uploadFile);
-        formData.append('project_id', String(project.id)); // ✅ Convertir en string
-        if (data.folder_id) {
-            formData.append('folder_id', String(data.folder_id));
-        }
+        const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+        const totalSize = uploadFile.size;
+        const chunkCount = Math.ceil(totalSize / CHUNK_SIZE);
+        const uploadId = `${uploadFile.name.replace(/[^A-Za-z0-9_-]/g, '_')}_${Date.now()}`;
+        const folderId = data.folder_id ? String(data.folder_id) : '';
 
         setUploading(true);
+        setUploadProgress(0);
+        setUploadError(null);
 
-        router.post('/files/upload', formData, {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                console.log('✅ Upload réussi !');
-                setShowUploadModal(false);
-                setUploadFile(null);
-                setUploading(false);
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
+        try {
+            let uploadedBytes = 0;
+
+            for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex += 1) {
+                const start = chunkIndex * CHUNK_SIZE;
+                const end = Math.min(start + CHUNK_SIZE, totalSize);
+                const chunkBlob = uploadFile.slice(start, end);
+                const chunkForm = new FormData();
+                chunkForm.append('chunk', chunkBlob, uploadFile.name);
+                chunkForm.append('project_id', String(project.id));
+                if (folderId) {
+                    chunkForm.append('folder_id', folderId);
                 }
-                window.location.reload();
-            },
-            onError: (errors) => {
-                console.error('❌ Erreurs:', errors);
-                const errorMessage = typeof errors === 'string' ? errors : Object.values(errors).flat().join('\n');
-                alert('Erreur: ' + errorMessage);
-                setUploading(false);
-            },
-            onFinish: () => {
-                setUploading(false);
-            },
-        });
+                chunkForm.append('upload_id', uploadId);
+                chunkForm.append('chunk_index', String(chunkIndex));
+                chunkForm.append('chunk_count', String(chunkCount));
+                chunkForm.append('file_name', uploadFile.name);
+                chunkForm.append('file_size', String(uploadFile.size));
+                chunkForm.append('mime_type', uploadFile.type || 'application/octet-stream');
+
+                await axios.post('/files/upload-chunk', chunkForm, {
+                    onUploadProgress: (event) => {
+                        const chunkUploaded = uploadedBytes + (event.loaded || 0);
+                        setUploadProgress(Math.min(100, Math.round((chunkUploaded * 100) / totalSize)));
+                    },
+                });
+
+                uploadedBytes += chunkBlob.size;
+            }
+
+            setShowUploadModal(false);
+            setUploadFile(null);
+            setUploadProgress(100);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+            window.location.reload();
+        } catch (error) {
+            console.error('Erreur upload:', error);
+            if (error.response) {
+                if (error.response.status === 413) {
+                    setUploadError('Le fichier est trop volumineux pour la configuration PHP actuelle. Vérifiez upload_max_filesize et post_max_size.');
+                } else if (error.response.data && error.response.data.message) {
+                    setUploadError(error.response.data.message);
+                } else {
+                    setUploadError(`Erreur durant l\'upload (${error.response.status})`);
+                }
+            } else {
+                setUploadError(error.message || 'Erreur durant l\'upload');
+            }
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleSearch = (e) => {
@@ -335,13 +368,13 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
                                     key={file.id}
                                     className={`group relative bg-white shadow-sm rounded-lg overflow-hidden hover:shadow-md transition ${getFileColor(file)}`}
                                 >
-                                    <div 
+                                    <div
                                         className="aspect-square flex items-center justify-center cursor-pointer p-4"
                                         onClick={() => loadFilePreview(file)}
                                     >
                                         {getFileIcon(file)}
                                     </div>
-                                    
+
                                     <div className="p-3 border-t border-gray-100">
                                         <p className="text-xs font-medium text-gray-700 truncate" title={file.original_name}>
                                             {file.original_name}
@@ -394,7 +427,7 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
                                 Aucun fichier
                             </h3>
                             <p className="mt-1 text-sm text-gray-500">
-                                {searchTerm || typeFilter 
+                                {searchTerm || typeFilter
                                     ? 'Aucun fichier ne correspond à vos filtres'
                                     : 'Commencez à uploader vos fichiers'}
                             </p>
@@ -482,7 +515,24 @@ export default function FileIndex({ auth, project, files, folders, currentFolder
                                     {errors.file && (
                                         <p className="mt-1 text-sm text-red-600">{errors.file}</p>
                                     )}
+                                    {uploadError && (
+                                        <p className="mt-1 text-sm text-red-600">{uploadError}</p>
+                                    )}
                                 </div>
+                                {uploading && (
+                                    <div className="mt-4">
+                                        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                                            <span>Envoi en cours : {uploadProgress}%</span>
+                                            <span>{uploadFile?.name || 'Fichier en cours'}</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-2 bg-tasho-primary rounded-full transition-all duration-200"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">

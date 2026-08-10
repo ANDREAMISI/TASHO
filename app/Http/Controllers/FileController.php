@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class FileController extends Controller
@@ -64,7 +65,7 @@ class FileController extends Controller
         // Recherche
         if ($request->filled('search')) {
             $query->where('name', 'LIKE', '%' . $request->search . '%')
-                  ->orWhere('original_name', 'LIKE', '%' . $request->search . '%');
+                ->orWhere('original_name', 'LIKE', '%' . $request->search . '%');
         }
 
         $files = $query->with(['user', 'folder'])
@@ -135,11 +136,11 @@ class FileController extends Controller
         try {
             Log::info('=== UPLOAD DE FICHIER ===');
             Log::info('Données reçues:', $request->all());
-            
+
             $request->validate([
                 'project_id' => 'required|exists:projects,id',
                 'folder_id' => 'nullable|exists:folders,id',
-                'file' => 'required|file|max:5120', // 5GB max
+                'file' => 'required|file',
             ]);
 
             Log::info('Validation réussie');
@@ -148,21 +149,12 @@ class FileController extends Controller
             Gate::authorize('create', [File::class, $project]);
 
             $uploadedFile = $request->file('file');
-            
+
             Log::info('Fichier reçu:', [
                 'name' => $uploadedFile->getClientOriginalName(),
                 'size' => $uploadedFile->getSize(),
                 'mime' => $uploadedFile->getMimeType(),
             ]);
-
-            // Vérifier la taille
-            $maxSize = $this->getMaxFileSize($project);
-            if ($uploadedFile->getSize() > $maxSize) {
-                Log::error('Fichier trop volumineux', ['size' => $uploadedFile->getSize(), 'max' => $maxSize]);
-                return back()->withErrors([
-                    'file' => 'Le fichier dépasse la taille maximale autorisée (' . ($maxSize / 1024 / 1024) . 'MB).',
-                ]);
-            }
 
             // Vérifier le type de fichier
             if (!$this->isAllowedFileType($uploadedFile)) {
@@ -182,8 +174,11 @@ class FileController extends Controller
 
             Log::info('Fichier uploadé avec succès', ['file_id' => $file->id]);
 
-            return back()->with('success', 'Fichier uploadé avec succès !');
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Fichier uploadé avec succès !']);
+            }
 
+            return back()->with('success', 'Fichier uploadé avec succès !');
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'upload:', [
                 'message' => $e->getMessage(),
@@ -192,7 +187,125 @@ class FileController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['message' => 'Erreur: ' . $e->getMessage()], 500);
+            }
+
             return back()->withErrors(['message' => 'Erreur: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Uploader un chunk de fichier
+     */
+    public function uploadChunk(Request $request)
+    {
+        try {
+            $request->validate([
+                'project_id' => 'required|exists:projects,id',
+                'folder_id' => 'nullable|exists:folders,id',
+                'upload_id' => 'required|string|max:255',
+                'chunk_index' => 'required|integer|min:0',
+                'chunk_count' => 'required|integer|min:1',
+                'file_name' => 'required|string|max:255',
+                'file_size' => 'required|integer|min:1',
+                'mime_type' => 'required|string|max:255',
+                'chunk' => 'required|file',
+            ]);
+
+            $project = Project::findOrFail($request->project_id);
+            Gate::authorize('create', [File::class, $project]);
+
+            $uploadId = preg_replace('/[^A-Za-z0-9_-]/', '_', $request->upload_id);
+            $tempDirectory = storage_path('app/tmp/uploads/' . $uploadId);
+            if (!is_dir($tempDirectory)) {
+                mkdir($tempDirectory, 0755, true);
+            }
+
+            $chunkFile = $request->file('chunk');
+            $chunkPath = $tempDirectory . '/' . $request->chunk_index . '.part';
+            $chunkFile->move($tempDirectory, $request->chunk_index . '.part');
+
+            Log::info('Chunk reçu', [
+                'upload_id' => $uploadId,
+                'chunk_index' => $request->chunk_index,
+                'chunk_count' => $request->chunk_count,
+                'file_name' => $request->file_name,
+                'file_size' => $request->file_size,
+                'mime_type' => $request->mime_type,
+            ]);
+
+            // Cast chunk indexes to int to avoid strict comparison issues with string values
+            $chunkIndex = (int) $request->chunk_index;
+            $chunkCount = (int) $request->chunk_count;
+
+            if ($chunkIndex + 1 === $chunkCount) {
+                Log::info('Assemblage des chunks démarré', ['upload_id' => $uploadId, 'chunk_count' => $chunkCount]);
+                $finalName = pathinfo($request->file_name, PATHINFO_FILENAME);
+                $extension = pathinfo($request->file_name, PATHINFO_EXTENSION);
+                $slug = Str::slug($finalName) . '-' . Str::random(8);
+                $fileName = $slug . ($extension ? '.' . $extension : '');
+                $relativePath = 'projects/' . $project->id . '/' . date('Y/m/d') . '/' . $fileName;
+                $fullPath = storage_path('app/' . $relativePath);
+
+                if (!is_dir(dirname($fullPath))) {
+                    mkdir(dirname($fullPath), 0755, true);
+                }
+
+                $outputHandle = fopen($fullPath, 'ab');
+                for ($i = 0; $i < $chunkCount; $i++) {
+                    $partPath = $tempDirectory . '/' . $i . '.part';
+                    if (!file_exists($partPath)) {
+                        fclose($outputHandle);
+                        throw new \RuntimeException('Chunk manquant: ' . $i);
+                    }
+                    $inputHandle = fopen($partPath, 'rb');
+                    stream_copy_to_stream($inputHandle, $outputHandle);
+                    fclose($inputHandle);
+                }
+                fclose($outputHandle);
+
+                $file = File::create([
+                    'project_id' => $project->id,
+                    'folder_id' => $request->folder_id,
+                    'user_id' => auth()->id(),
+                    'name' => $finalName,
+                    'original_name' => $request->file_name,
+                    'slug' => $slug,
+                    'path' => $relativePath,
+                    'disk' => 'local',
+                    'size' => $request->file_size,
+                    'mime_type' => $request->mime_type,
+                    'extension' => $extension,
+                    'hash' => null,
+                    'uploaded_at' => now(),
+                ]);
+
+                for ($i = 0; $i < $request->chunk_count; $i++) {
+                    @unlink($tempDirectory . '/' . $i . '.part');
+                }
+                @rmdir($tempDirectory);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Upload terminé',
+                    'file_id' => $file->id,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'uploaded' => true,
+                'chunk_index' => $request->chunk_index,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erreur upload chunk:', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json(['message' => 'Erreur durant l\'upload du chunk: ' . $e->getMessage()], 500);
         }
     }
 
@@ -278,14 +391,6 @@ class FileController extends Controller
     }
 
     /**
-     * Obtenir la taille maximale autorisée
-     */
-    private function getMaxFileSize(Project $project): int
-    {
-        return 5368709120; // 5GB par défaut
-    }
-
-    /**
      * Vérifier si le type de fichier est autorisé
      */
     private function isAllowedFileType($file): bool
@@ -296,11 +401,6 @@ class FileController extends Controller
             'image/gif',
             'image/webp',
             'image/svg+xml',
-            'video/mp4',
-            'video/quicktime',
-            'video/webm',
-            'video/x-msvideo',    // AVI
-            'video/x-matroska',   // MKV
             'application/pdf',
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -316,8 +416,10 @@ class FileController extends Controller
         ];
 
         $mimeType = $file->getMimeType();
-        Log::info('Vérification du type MIME:', ['mime' => $mimeType, 'allowed' => in_array($mimeType, $allowedTypes)]);
+        $isAllowed = str_starts_with($mimeType, 'video/') || in_array($mimeType, $allowedTypes);
 
-        return in_array($mimeType, $allowedTypes);
+        Log::info('Vérification du type MIME:', ['mime' => $mimeType, 'allowed' => $isAllowed]);
+
+        return $isAllowed;
     }
 }
