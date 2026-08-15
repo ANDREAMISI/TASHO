@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\File;
 use App\Models\Project;
 use App\Models\ProjectAccess;
 use App\Models\Client;
@@ -9,6 +10,7 @@ use App\Services\ShareService;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -252,7 +254,7 @@ class ShareController extends Controller
 
         if ($request->password === $access->password) {
             session(['gallery_authenticated_' . $access->id => true]);
-            
+
             // Log l'accès
             $this->auditService->log(
                 null,
@@ -324,17 +326,107 @@ class ShareController extends Controller
             'email' => 'required|email|max:255',
         ]);
 
-        $favorite = $access->project->files()
-            ->find($request->file_id)
-            ->favorites()
-            ->create([
-                'visitor_email' => $request->email,
-                'metadata' => [
-                    'name' => $request->name,
-                    'access_id' => $access->id,
-                ],
-            ]);
+        $file = $access->project->files()->find($request->file_id);
+
+        if (!$file) {
+            return response()->json(['error' => 'Fichier introuvable.'], 404);
+        }
+
+        $favorite = $file->favorites()->create([
+            'visitor_email' => $request->email,
+            'metadata' => [
+                'name' => $request->name,
+                'access_id' => $access->id,
+            ],
+        ]);
 
         return response()->json(['success' => true, 'favorite' => $favorite]);
+    }
+
+    /**
+     * Récupérer les commentaires d'une galerie publique
+     */
+    public function getComments($token)
+    {
+        $access = ProjectAccess::where('access_token', $token)->firstOrFail();
+
+        $comments = $access->project->comments()
+            ->with('file')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'file_id' => $comment->file_id,
+                    'visitor_name' => $comment->visitor_name,
+                    'visitor_email' => $comment->visitor_email,
+                    'content' => $comment->content,
+                    'created_at' => $comment->created_at,
+                ];
+            });
+
+        return response()->json($comments);
+    }
+
+    /**
+     * Prévisualiser un fichier depuis la galerie publique
+     */
+    public function viewFile(Request $request, $token, File $file)
+    {
+        $access = ProjectAccess::where('access_token', $token)->firstOrFail();
+
+        if ($file->project_id !== $access->project_id) {
+            abort(404);
+        }
+
+        if (!$access->isValid()) {
+            abort(403, 'Accès à la galerie expiré ou limité.');
+        }
+
+        if (!$access->is_public && !session('gallery_authenticated_' . $access->id)) {
+            return redirect()->route('public.gallery', $token);
+        }
+
+        $file->increment('view_count');
+        $file->update(['last_accessed_at' => now()]);
+
+        if ($file->isImage() || $file->isVideo()) {
+            return Storage::disk($file->disk)->response($file->path, $file->original_name);
+        }
+
+        return response()->json([
+            'file' => $file,
+            'type' => 'document',
+            'download_url' => route('public.download', ['token' => $token, 'file' => $file->id]),
+        ]);
+    }
+
+    /**
+     * Télécharger un fichier depuis la galerie publique
+     */
+    public function downloadFile(Request $request, $token, File $file)
+    {
+        $access = ProjectAccess::where('access_token', $token)->firstOrFail();
+
+        if ($file->project_id !== $access->project_id) {
+            abort(404);
+        }
+
+        if (!$access->isValid()) {
+            abort(403, 'Accès à la galerie expiré ou limité.');
+        }
+
+        if (!$access->is_public && !session('gallery_authenticated_' . $access->id)) {
+            return redirect()->route('public.gallery', $token);
+        }
+
+        if (!$access->can_download) {
+            abort(403, 'Le téléchargement est désactivé pour cette galerie.');
+        }
+
+        $file->increment('download_count');
+        $file->update(['last_accessed_at' => now()]);
+
+        return Storage::disk($file->disk)->download($file->path, $file->original_name);
     }
 }

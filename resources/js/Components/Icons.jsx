@@ -237,7 +237,7 @@ export {
 // ============================================================
 export {
     LayoutDashboard,
-    Briefcase,
+    Briefcase as BriefcaseIcon,
     Cloud,
     Database,
     Calendar as CalendarLucide,
@@ -310,4 +310,5 @@ export {
     Mail as MailIcon,
     X as XIcon,
     ChevronDown as ChevronDownIcon,
+    ArrowDownTrayIcon as DownloadIcon,
 };
