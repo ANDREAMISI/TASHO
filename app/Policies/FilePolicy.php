@@ -24,7 +24,7 @@ class FilePolicy
     public function update(User $user, File $file): bool
     {
         if ($user->email === 'admin@tasho.com') return true;
-        return $file->user_id === $user->id;
+        return $file->user_id === $user->id || $file->project->isOwner($user);
     }
 
     public function delete(User $user, File $file): bool

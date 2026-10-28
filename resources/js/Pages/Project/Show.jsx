@@ -1,190 +1,243 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Tag } from 'primereact/tag';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import ActivityTab from '@/Components/Project/ActivityTab';
+import FilesTab from '@/Components/Project/FilesTab';
+import OverviewTab from '@/Components/Project/OverviewTab';
+import SharesTab from '@/Components/Project/SharesTab';
+import { priorityMeta, statusMeta } from '@/Components/Project/projectMeta';
 import {
-    ArrowLeftIcon,
-    FolderIcon,
-    DocumentIcon,
-    PencilIcon,
-    TrashIcon,
-    UserIcon,
-    CalendarIcon,
-    ClockIcon,
-    EyeIcon,
-    ChatBubbleLeftIcon,
-    PlusIcon,
+    ChartBarIcon,
+    ChevronRight,
     CloudArrowUpIcon,
+    FolderIcon,
+    LinkIcon,
+    ShareIcon,
+    Squares2X2Icon,
+    UserIcon,
 } from '@/Components/Icons';
+import { formatNumber, timeAgo } from '@/utils/format';
 
-export default function ProjectShow({ auth, project, team }) {
-    const statusLabels = {
-        draft: 'Brouillon',
-        active: 'Actif',
-        archived: 'Archivé',
-        completed: 'Terminé',
-    };
+const TABS = [
+    { key: 'overview', label: 'Aperçu', icon: Squares2X2Icon },
+    { key: 'files', label: 'Fichiers', icon: FolderIcon, countKey: 'total_files' },
+    { key: 'activity', label: 'Activité', icon: ChartBarIcon, countKey: 'logs_count' },
+    { key: 'shares', label: 'Partages', icon: LinkIcon, countKey: 'accesses_count' },
+];
 
-    const statusColors = {
-        draft: 'bg-gray-100 text-gray-800',
-        active: 'bg-green-100 text-green-800',
-        archived: 'bg-yellow-100 text-yellow-800',
-        completed: 'bg-blue-100 text-blue-800',
-    };
+export default function ProjectShow({
+    auth,
+    project,
+    team,
+    stats,
+    tab = 'overview',
+    canManage = false,
+    canManageMembers = false,
+    canUpload = false,
+    members = [],
+    teamMembers = [],
+    recentFiles = [],
+    recentLogs = [],
+    comments = [],
+    files = null,
+    folders = [],
+    currentFolder = null,
+    breadcrumb = [],
+    folderOptions = [],
+    filters = {},
+    logs = null,
+    activitySummary = { total: 0, by_action: [] },
+    accesses = [],
+    clients = [],
+}) {
+    const status = statusMeta(project.status);
+    const priority = priorityMeta(project.priority);
 
-    const priorityLabels = {
-        low: 'Basse',
-        medium: 'Moyenne',
-        high: 'Haute',
-    };
+    const openTab = (key, extra = {}) => {
+        if (key === tab) {
+            return;
+        }
 
-    const priorityColors = {
-        low: 'bg-gray-100 text-gray-600',
-        medium: 'bg-yellow-100 text-yellow-800',
-        high: 'bg-red-100 text-red-800',
+        router.get(
+            route('projects.show', project.id),
+            { tab: key, ...extra },
+            { preserveState: true, preserveScroll: true },
+        );
     };
 
     return (
         <AuthenticatedLayout user={auth.user}>
             <Head title={`${project.title} - TASHO`} />
 
-            <div className="py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <Link
-                                href={route('projects.index')}
-                                className="p-2 text-gray-400 hover:text-gray-600 transition"
+            <div className="mx-auto w-full max-w-7xl space-y-6">
+                {/* Fil d'Ariane */}
+                <nav aria-label="Fil d'Ariane" className="flex items-center gap-1.5 text-sm">
+                    <Link
+                        href={route('projects.index')}
+                        className="rounded-md px-1 py-0.5 font-medium text-gray-500 transition hover:text-gray-800"
+                    >
+                        Projets
+                    </Link>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-gray-300" />
+                    <span className="truncate font-medium text-gray-900">{project.title}</span>
+                </nav>
+
+                {/* En-tête du projet */}
+                <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-gray-900">
+                                {project.title}
+                            </h1>
+
+                            <Tag
+                                value={status.label}
+                                severity={status.severity}
+                                rounded
+                                className="!px-2.5 !py-0.5 !text-[11px] !font-medium"
+                            />
+
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-600">
+                                <span className={`h-1.5 w-1.5 rounded-full ${priority.dot}`} />
+                                Priorité {priority.label.toLowerCase()}
+                            </span>
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-gray-500">
+                            <span className="inline-flex items-center gap-1.5">
+                                <UserIcon className="h-3.5 w-3.5 text-gray-400" />
+                                {project.client_name || 'Aucun client associé'}
+                            </span>
+
+                            <span className="inline-flex items-center gap-1.5">
+                                <span className="text-gray-400">Propriétaire</span>
+                                <span className="font-medium text-gray-700">
+                                    {project.owner?.name || '—'}
+                                </span>
+                            </span>
+
+                            <span className="text-gray-400">
+                                Mis à jour {timeAgo(project.updated_at)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        {canManage && (
+                            <button
+                                type="button"
+                                onClick={() => openTab('shares')}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
                             >
-                                <ArrowLeftIcon className="h-5 w-5" />
-                            </Link>
-                            <div>
-                                <h1 className="text-2xl font-semibold text-gray-900">
-                                    {project.title}
-                                </h1>
-                                <div className="flex items-center space-x-3 mt-1">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[project.status]}`}>
-                                        {statusLabels[project.status]}
-                                    </span>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[project.priority]}`}>
-                                        {priorityLabels[project.priority]}
-                                    </span>
-                                    {project.client_name && (
-                                        <span className="text-sm text-gray-500">
-                                            Client: {project.client_name}
+                                <ShareIcon className="h-4 w-4" />
+                                Partager
+                            </button>
+                        )}
+
+                        {canUpload && (
+                            <button
+                                type="button"
+                                onClick={() => openTab('files')}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90"
+                            >
+                                <CloudArrowUpIcon className="h-4 w-4" />
+                                Gérer les fichiers
+                            </button>
+                        )}
+                    </div>
+                </header>
+
+                {/* Onglets */}
+                <div className="rounded-xl border border-gray-200 bg-white px-2 shadow-sm">
+                    <nav
+                        role="tablist"
+                        aria-label="Sections du projet"
+                        className="-mb-px flex gap-1 overflow-x-auto"
+                    >
+                        {TABS.map((item) => {
+                            const Icon = item.icon;
+                            const active = tab === item.key;
+                            const count = item.countKey ? stats[item.countKey] : null;
+
+                            return (
+                                <button
+                                    key={item.key}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={active}
+                                    onClick={() => openTab(item.key)}
+                                    className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-3.5 py-3 text-sm font-medium transition ${
+                                        active
+                                            ? 'border-tasho-primary text-tasho-primary'
+                                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Icon className="h-4 w-4" />
+                                    {item.label}
+
+                                    {count !== null && (
+                                        <span
+                                            className={`rounded-full px-1.5 py-0.5 text-[11px] tabular-nums ${
+                                                active
+                                                    ? 'bg-tasho-primary/10 text-tasho-primary'
+                                                    : 'bg-gray-100 text-gray-500'
+                                            }`}
+                                        >
+                                            {formatNumber(count)}
                                         </span>
                                     )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Link
-                                href={route('files.index', project.id)}
-                                className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md text-sm font-medium hover:bg-tasho-primary/90 transition"
-                            >
-                                <FolderIcon className="h-4 w-4 mr-2" />
-                                Voir les fichiers
-                            </Link>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 transition">
-                                <PencilIcon className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Project Info */}
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white shadow-sm rounded-lg p-6">
-                            <h3 className="text-sm font-medium text-gray-500">Description</h3>
-                            <p className="mt-2 text-gray-900">
-                                {project.description || 'Aucune description'}
-                            </p>
-                        </div>
-                        <div className="bg-white shadow-sm rounded-lg p-6">
-                            <h3 className="text-sm font-medium text-gray-500">Détails</h3>
-                            <div className="mt-2 space-y-2">
-                                <div className="flex items-center text-sm text-gray-600">
-                                    <UserIcon className="h-4 w-4 mr-2 text-gray-400" />
-                                    <span>Propriétaire: {project.owner?.name}</span>
-                                </div>
-                                {project.start_date && (
-                                    <div className="flex items-center text-sm text-gray-600">
-                                        <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
-                                        <span>Début: {new Date(project.start_date).toLocaleDateString('fr-FR')}</span>
-                                    </div>
-                                )}
-                                {project.end_date && (
-                                    <div className="flex items-center text-sm text-gray-600">
-                                        <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
-                                        <span>Fin: {new Date(project.end_date).toLocaleDateString('fr-FR')}</span>
-                                    </div>
-                                )}
-                                <div className="flex items-center text-sm text-gray-600">
-                                    <ClockIcon className="h-4 w-4 mr-2 text-gray-400" />
-                                    <span>Créé le: {new Date(project.created_at).toLocaleDateString('fr-FR')}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-white shadow-sm rounded-lg p-6">
-                            <h3 className="text-sm font-medium text-gray-500">Statistiques</h3>
-                            <div className="mt-2 grid grid-cols-2 gap-4">
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-900">0</p>
-                                    <p className="text-xs text-gray-500">Fichiers</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-900">0</p>
-                                    <p className="text-xs text-gray-500">Dossiers</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-900">0</p>
-                                    <p className="text-xs text-gray-500">Membres</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-900">0</p>
-                                    <p className="text-xs text-gray-500">Commentaires</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Link
-                            href={route('files.index', project.id)}
-                            className="bg-white shadow-sm rounded-lg p-6 hover:shadow-md transition text-center"
-                        >
-                            <FolderIcon className="h-8 w-8 mx-auto text-tasho-primary" />
-                            <p className="mt-2 font-medium text-gray-900">Gérer les fichiers</p>
-                            <p className="text-sm text-gray-500">Uploader et organiser vos fichiers</p>
-                        </Link>
-                        <Link
-                            href={route('shares.index', { project_id: project.id })}
-                            className="bg-white shadow-sm rounded-lg p-6 hover:shadow-md transition text-center"
-                        >
-                            <CloudArrowUpIcon className="h-8 w-8 mx-auto text-tasho-primary" />
-                            <p className="mt-2 font-medium text-gray-900">Partager</p>
-                            <p className="text-sm text-gray-500">Partager avec vos clients</p>
-                        </Link>
-                        <Link
-                            href={route('activity.project', project.id)}
-                            className="bg-white shadow-sm rounded-lg p-6 hover:shadow-md transition text-center"
-                        >
-                            <EyeIcon className="h-8 w-8 mx-auto text-tasho-primary" />
-                            <p className="mt-2 font-medium text-gray-900">Activité</p>
-                            <p className="text-sm text-gray-500">Voir l'historique du projet</p>
-                        </Link>
-                    </div>
-
-                    {/* Recent Activity */}
-                    <div className="mt-6 bg-white shadow-sm rounded-lg p-6">
-                        <h3 className="text-lg font-medium text-gray-900">Activité récente</h3>
-                        <div className="mt-4">
-                            <div className="text-center py-8 text-gray-500">
-                                <p>Aucune activité récente</p>
-                                <p className="text-sm">Commencez à utiliser ce projet</p>
-                            </div>
-                        </div>
-                    </div>
+                                </button>
+                            );
+                        })}
+                    </nav>
                 </div>
+
+                {/* Contenu de l'onglet */}
+                {tab === 'overview' && (
+                    <OverviewTab
+                        project={project}
+                        stats={stats}
+                        members={members}
+                        teamMembers={teamMembers}
+                        recentFiles={recentFiles}
+                        recentLogs={recentLogs}
+                        comments={comments}
+                        canManageMembers={canManageMembers}
+                        onOpenTab={openTab}
+                    />
+                )}
+
+                {tab === 'files' && files && (
+                    <FilesTab
+                        project={project}
+                        files={files}
+                        folders={folders}
+                        currentFolder={currentFolder}
+                        breadcrumb={breadcrumb}
+                        filters={filters}
+                        folderOptions={folderOptions}
+                        canManage={canManage}
+                        canUpload={canUpload}
+                    />
+                )}
+
+                {tab === 'activity' && logs && (
+                    <ActivityTab
+                        project={project}
+                        logs={logs}
+                        activitySummary={activitySummary}
+                        filters={filters}
+                    />
+                )}
+
+                {tab === 'shares' && (
+                    <SharesTab
+                        project={project}
+                        accesses={accesses}
+                        clients={clients}
+                        canManage={canManage}
+                    />
+                )}
             </div>
         </AuthenticatedLayout>
     );

@@ -3,17 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\File;
-use App\Models\Project;
 use App\Models\Folder;
-use App\Models\AccessLog;
-use App\Services\FileService;
+use App\Models\Project;
 use App\Services\AuditService;
+use App\Services\FileService;
+use App\Support\FileCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
 
 class FileController extends Controller
 {
@@ -27,105 +26,31 @@ class FileController extends Controller
     }
 
     /**
-     * Afficher les fichiers d'un projet
+     * Servir le contenu d'un fichier en lecture (images, vidéos, PDF…).
+     *
+     * Passe par une route authentifiée : le disque `local` n'est pas exposé
+     * publiquement. La réponse gère les requêtes Range (lecture vidéo).
      */
-    public function index(Request $request, Project $project)
+    public function stream(File $file)
     {
-        Gate::authorize('view', $project);
+        Gate::authorize('view', $file);
 
-        $query = File::where('project_id', $project->id);
+        $disk = Storage::disk($file->disk);
 
-        // Filtrer par dossier
-        if ($request->filled('folder_id')) {
-            $query->where('folder_id', $request->folder_id);
+        if (! $disk->exists($file->path)) {
+            abort(404, 'Fichier introuvable sur le disque.');
         }
 
-        // Filtrer par type
-        if ($request->filled('type')) {
-            switch ($request->type) {
-                case 'image':
-                    $query->where('mime_type', 'LIKE', 'image/%');
-                    break;
-                case 'video':
-                    $query->where('mime_type', 'LIKE', 'video/%');
-                    break;
-                case 'document':
-                    $query->whereIn('mime_type', [
-                        'application/pdf',
-                        'application/msword',
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                        'application/vnd.ms-excel',
-                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        'text/plain',
-                    ]);
-                    break;
-            }
-        }
-
-        // Recherche
-        if ($request->filled('search')) {
-            $query->where('name', 'LIKE', '%' . $request->search . '%')
-                ->orWhere('original_name', 'LIKE', '%' . $request->search . '%');
-        }
-
-        $files = $query->with(['user', 'folder'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(24)
-            ->through(function ($file) {
-                return [
-                    'id' => $file->id,
-                    'name' => $file->name,
-                    'original_name' => $file->original_name,
-                    'slug' => $file->slug,
-                    'size' => $file->size,
-                    'human_size' => $file->getHumanSize(),
-                    'mime_type' => $file->mime_type,
-                    'extension' => $file->extension,
-                    'path' => $file->path,
-                    'is_public' => $file->is_public,
-                    'user' => $file->user,
-                    'folder' => $file->folder,
-                    'is_image' => $file->isImage(),
-                    'is_video' => $file->isVideo(),
-                    'is_document' => $file->isDocument(),
-                    'download_count' => $file->download_count,
-                    'view_count' => $file->view_count,
-                    'created_at' => $file->created_at,
-                    'updated_at' => $file->updated_at,
-                ];
-            });
-
-        // Récupérer la structure des dossiers
-        $folders = Folder::where('project_id', $project->id)
-            ->whereNull('parent_id')
-            ->with(['children', 'files'])
-            ->get();
-
-        $currentFolder = null;
-        if ($request->filled('folder_id')) {
-            $currentFolder = Folder::find($request->folder_id);
-        }
-
-        $stats = [
-            'total_files' => File::where('project_id', $project->id)->count(),
-            'total_size' => File::where('project_id', $project->id)->sum('size'),
-            'images' => File::where('project_id', $project->id)->where('mime_type', 'LIKE', 'image/%')->count(),
-            'videos' => File::where('project_id', $project->id)->where('mime_type', 'LIKE', 'video/%')->count(),
-            'documents' => File::where('project_id', $project->id)->whereIn('mime_type', [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            ])->count(),
+        $headers = [
+            'Content-Type' => $file->mime_type ?: 'application/octet-stream',
+            'Cache-Control' => 'private, max-age=3600',
         ];
 
-        return Inertia::render('File/Index', [
-            'project' => $project,
-            'files' => $files,
-            'folders' => $folders,
-            'currentFolder' => $currentFolder,
-            'filters' => $request->only(['folder_id', 'type', 'search']),
-            'stats' => $stats,
-        ]);
+        if ($file->disk === 'local') {
+            return response()->file($disk->path($file->path), $headers);
+        }
+
+        return $disk->response($file->path, $file->original_name, $headers);
     }
 
     /**
@@ -134,48 +59,43 @@ class FileController extends Controller
     public function upload(Request $request)
     {
         try {
-            Log::info('=== UPLOAD DE FICHIER ===');
-            Log::info('Données reçues:', $request->all());
-
             $request->validate([
                 'project_id' => 'required|exists:projects,id',
                 'folder_id' => 'nullable|exists:folders,id',
                 'file' => 'required|file',
             ]);
 
-            Log::info('Validation réussie');
-
             $project = Project::findOrFail($request->project_id);
             Gate::authorize('create', [File::class, $project]);
 
-            $uploadedFile = $request->file('file');
+            $folderId = $this->resolveFolderId($request, $project);
 
-            Log::info('Fichier reçu:', [
-                'name' => $uploadedFile->getClientOriginalName(),
-                'size' => $uploadedFile->getSize(),
-                'mime' => $uploadedFile->getMimeType(),
-            ]);
-
-            // Vérifier le type de fichier
-            if (!$this->isAllowedFileType($uploadedFile)) {
-                Log::error('Type de fichier non autorisé', ['mime' => $uploadedFile->getMimeType()]);
-                return back()->withErrors([
-                    'file' => 'Ce type de fichier n\'est pas autorisé.',
-                ]);
+            if ($request->filled('folder_id') && ! $folderId) {
+                return $this->uploadError($request, 'Dossier invalide pour ce projet.', 422);
             }
 
-            // Créer le fichier
+            $uploadedFile = $request->file('file');
+
+            // Vérifier le type de fichier
+            if (! $this->isAllowedFileType($uploadedFile)) {
+                return $this->uploadError($request, 'Ce type de fichier n\'est pas autorisé.', 422);
+            }
+
             $file = $this->fileService->uploadFile(
                 $uploadedFile,
                 $project,
-                $request->folder_id,
+                $folderId,
                 auth()->user()
             );
 
             Log::info('Fichier uploadé avec succès', ['file_id' => $file->id]);
 
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => true, 'message' => 'Fichier uploadé avec succès !']);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Fichier uploadé avec succès !',
+                    'file_id' => $file->id,
+                ]);
             }
 
             return back()->with('success', 'Fichier uploadé avec succès !');
@@ -184,14 +104,9 @@ class FileController extends Controller
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['message' => 'Erreur: ' . $e->getMessage()], 500);
-            }
-
-            return back()->withErrors(['message' => 'Erreur: ' . $e->getMessage()]);
+            return $this->uploadError($request, 'Erreur: ' . $e->getMessage(), 500);
         }
     }
 
@@ -216,58 +131,62 @@ class FileController extends Controller
             $project = Project::findOrFail($request->project_id);
             Gate::authorize('create', [File::class, $project]);
 
+            $folderId = $this->resolveFolderId($request, $project);
+
+            if ($request->filled('folder_id') && ! $folderId) {
+                return response()->json(['message' => 'Dossier invalide pour ce projet.'], 422);
+            }
+
             $uploadId = preg_replace('/[^A-Za-z0-9_-]/', '_', $request->upload_id);
             $tempDirectory = storage_path('app/tmp/uploads/' . $uploadId);
-            if (!is_dir($tempDirectory)) {
+
+            if (! is_dir($tempDirectory)) {
                 mkdir($tempDirectory, 0755, true);
             }
 
             $chunkFile = $request->file('chunk');
-            $chunkPath = $tempDirectory . '/' . $request->chunk_index . '.part';
             $chunkFile->move($tempDirectory, $request->chunk_index . '.part');
 
-            Log::info('Chunk reçu', [
-                'upload_id' => $uploadId,
-                'chunk_index' => $request->chunk_index,
-                'chunk_count' => $request->chunk_count,
-                'file_name' => $request->file_name,
-                'file_size' => $request->file_size,
-                'mime_type' => $request->mime_type,
-            ]);
-
-            // Cast chunk indexes to int to avoid strict comparison issues with string values
             $chunkIndex = (int) $request->chunk_index;
             $chunkCount = (int) $request->chunk_count;
 
             if ($chunkIndex + 1 === $chunkCount) {
-                Log::info('Assemblage des chunks démarré', ['upload_id' => $uploadId, 'chunk_count' => $chunkCount]);
+                Log::info('Assemblage des chunks démarré', [
+                    'upload_id' => $uploadId,
+                    'chunk_count' => $chunkCount,
+                ]);
+
                 $finalName = pathinfo($request->file_name, PATHINFO_FILENAME);
                 $extension = pathinfo($request->file_name, PATHINFO_EXTENSION);
                 $slug = Str::slug($finalName) . '-' . Str::random(8);
                 $fileName = $slug . ($extension ? '.' . $extension : '');
                 $relativePath = 'projects/' . $project->id . '/' . date('Y/m/d') . '/' . $fileName;
-                $fullPath = storage_path('app/' . $relativePath);
+                $fullPath = Storage::disk('local')->path($relativePath);
 
-                if (!is_dir(dirname($fullPath))) {
+                if (! is_dir(dirname($fullPath))) {
                     mkdir(dirname($fullPath), 0755, true);
                 }
 
                 $outputHandle = fopen($fullPath, 'ab');
+
                 for ($i = 0; $i < $chunkCount; $i++) {
                     $partPath = $tempDirectory . '/' . $i . '.part';
-                    if (!file_exists($partPath)) {
+
+                    if (! file_exists($partPath)) {
                         fclose($outputHandle);
                         throw new \RuntimeException('Chunk manquant: ' . $i);
                     }
+
                     $inputHandle = fopen($partPath, 'rb');
                     stream_copy_to_stream($inputHandle, $outputHandle);
                     fclose($inputHandle);
                 }
+
                 fclose($outputHandle);
 
                 $file = File::create([
                     'project_id' => $project->id,
-                    'folder_id' => $request->folder_id,
+                    'folder_id' => $folderId,
                     'user_id' => auth()->id(),
                     'name' => $finalName,
                     'original_name' => $request->file_name,
@@ -281,9 +200,10 @@ class FileController extends Controller
                     'uploaded_at' => now(),
                 ]);
 
-                for ($i = 0; $i < $request->chunk_count; $i++) {
+                for ($i = 0; $i < $chunkCount; $i++) {
                     @unlink($tempDirectory . '/' . $i . '.part');
                 }
+
                 @rmdir($tempDirectory);
 
                 return response()->json([
@@ -302,7 +222,6 @@ class FileController extends Controller
             Log::error('Erreur upload chunk:', [
                 'message' => $e->getMessage(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json(['message' => 'Erreur durant l\'upload du chunk: ' . $e->getMessage()], 500);
@@ -316,11 +235,16 @@ class FileController extends Controller
     {
         Gate::authorize('download', $file);
 
-        // Incrémenter le compteur de téléchargements
+        $disk = Storage::disk($file->disk);
+
+        if (! $disk->exists($file->path)) {
+            abort(404, 'Fichier introuvable sur le disque.');
+        }
+
         $file->increment('download_count');
         $file->update(['last_accessed_at' => now()]);
 
-        return Storage::disk($file->disk)->download($file->path, $file->original_name);
+        return $disk->download($file->path, $file->original_name);
     }
 
     /**
@@ -333,26 +257,67 @@ class FileController extends Controller
         $file->increment('view_count');
         $file->update(['last_accessed_at' => now()]);
 
-        if ($file->isImage()) {
-            return response()->json([
-                'url' => Storage::disk($file->disk)->url($file->path),
-                'file' => $file,
-            ]);
-        }
-
-        if ($file->isVideo()) {
-            return response()->json([
-                'url' => Storage::disk($file->disk)->url($file->path),
-                'file' => $file,
-                'type' => 'video',
-            ]);
-        }
-
         return response()->json([
-            'file' => $file,
-            'type' => 'document',
+            'id' => $file->id,
+            'name' => $file->original_name,
+            'size' => (int) $file->size,
+            'human_size' => $file->getHumanSize(),
+            'mime_type' => $file->mime_type,
+            'category' => FileCategory::for($file->mime_type),
+            'category_label' => FileCategory::label($file->mime_type),
+            'is_image' => $file->isImage(),
+            'is_video' => $file->isVideo(),
+            'is_audio' => $file->isAudio(),
+            'is_pdf' => $file->isPdf(),
+            'is_document' => $file->isDocument(),
+            'is_previewable' => $file->isPreviewable(),
+            'stream_url' => route('files.stream', $file),
             'download_url' => route('files.download', $file),
+            'download_count' => (int) $file->download_count,
+            'view_count' => (int) $file->view_count,
+            'created_at' => $file->created_at?->toIso8601String(),
         ]);
+    }
+
+    /**
+     * Renommer un fichier ou le déplacer dans un dossier.
+     */
+    public function update(Request $request, File $file)
+    {
+        Gate::authorize('update', $file);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'folder_id' => 'nullable|exists:folders,id',
+        ]);
+
+        // Sans `folder_id` dans la requête, le fichier reste dans son dossier.
+        $folderId = $file->folder_id;
+
+        if ($request->has('folder_id')) {
+            $folderId = $request->filled('folder_id')
+                ? $this->resolveFolderId($request, $file->project)
+                : null;
+
+            if ($request->filled('folder_id') && ! $folderId) {
+                return back()->withErrors(['name' => 'Dossier invalide pour ce projet.']);
+            }
+        }
+
+        $fileName = trim((string) $request->name);
+        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+
+        if ($extension === '' && $file->extension) {
+            $fileName .= '.' . $file->extension;
+        }
+
+        $file->update([
+            'name' => pathinfo($fileName, PATHINFO_FILENAME),
+            'original_name' => $fileName,
+            'folder_id' => $folderId,
+        ]);
+
+        return back()->with('success', 'Fichier mis à jour avec succès !');
     }
 
     /**
@@ -391,6 +356,32 @@ class FileController extends Controller
     }
 
     /**
+     * Vérifier que le dossier ciblé appartient bien au projet.
+     */
+    private function resolveFolderId(Request $request, Project $project): ?int
+    {
+        if (! $request->filled('folder_id')) {
+            return null;
+        }
+
+        $folder = Folder::where('project_id', $project->id)->find($request->folder_id);
+
+        return $folder?->id;
+    }
+
+    /**
+     * Réponse d'erreur d'upload (JSON ou redirection).
+     */
+    private function uploadError(Request $request, string $message, int $status)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['message' => $message], $status);
+        }
+
+        return back()->withErrors(['file' => $message]);
+    }
+
+    /**
      * Vérifier si le type de fichier est autorisé
      */
     private function isAllowedFileType($file): bool
@@ -416,9 +407,9 @@ class FileController extends Controller
         ];
 
         $mimeType = $file->getMimeType();
-        $isAllowed = str_starts_with($mimeType, 'video/') || in_array($mimeType, $allowedTypes);
-
-        Log::info('Vérification du type MIME:', ['mime' => $mimeType, 'allowed' => $isAllowed]);
+        $isAllowed = str_starts_with($mimeType, 'video/')
+            || str_starts_with($mimeType, 'audio/')
+            || in_array($mimeType, $allowedTypes);
 
         return $isAllowed;
     }

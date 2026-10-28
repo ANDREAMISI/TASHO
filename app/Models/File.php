@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\FileCategory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -51,7 +53,10 @@ class File extends Model
         });
     }
 
-    // Relations
+    // ============================================================
+    // RELATIONS
+    // ============================================================
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
@@ -82,38 +87,110 @@ class File extends Model
         return $this->hasMany(AccessLog::class);
     }
 
-    // Vérifications
+    // ============================================================
+    // SCOPES
+    // ============================================================
+
+    /**
+     * Filtre par famille MIME (images, vidéos, documents…).
+     */
+    public function scopeOfCategory(Builder $query, string $category): Builder
+    {
+        if (! FileCategory::isKnown($category)) {
+            return $query;
+        }
+
+        return $query->whereRaw(FileCategory::expression() . ' = ?', [$category]);
+    }
+
+    /**
+     * Recherche sur le nom affiché et le nom d'origine.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $like = '%' . $term . '%';
+
+        return $query->where(function (Builder $query) use ($like) {
+            $query->where('name', 'LIKE', $like)
+                ->orWhere('original_name', 'LIKE', $like);
+        });
+    }
+
+    /**
+     * Fichiers mis en favori par un utilisateur.
+     */
+    public function scopeFavoritedBy(Builder $query, ?int $userId): Builder
+    {
+        if (! $userId) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('favorites', function (Builder $query) use ($userId) {
+            $query->where('user_id', $userId);
+        });
+    }
+
+    // ============================================================
+    // CATÉGORIE / TYPE
+    // ============================================================
+
+    public function category(): string
+    {
+        return FileCategory::for($this->mime_type);
+    }
+
     public function isImage(): bool
     {
-        return str_starts_with($this->mime_type, 'image/');
+        return $this->category() === FileCategory::IMAGES;
     }
 
     public function isVideo(): bool
     {
-        return str_starts_with($this->mime_type, 'video/');
+        return $this->category() === FileCategory::VIDEOS;
+    }
+
+    public function isAudio(): bool
+    {
+        return $this->category() === FileCategory::AUDIO;
     }
 
     public function isDocument(): bool
     {
-        return in_array($this->mime_type, [
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'text/plain',
-        ]);
+        return $this->category() === FileCategory::DOCUMENTS;
+    }
+
+    public function isPdf(): bool
+    {
+        return $this->mime_type === 'application/pdf';
+    }
+
+    /**
+     * Formats que le navigateur peut afficher directement.
+     */
+    public function isPreviewable(): bool
+    {
+        return $this->isImage() || $this->isVideo() || $this->isAudio() || $this->isPdf();
     }
 
     public function getHumanSize(): string
     {
-        $bytes = $this->size;
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max((int) $this->size, 0);
+        $units = ['o', 'Ko', 'Mo', 'Go', 'To'];
+        $index = 0;
 
-        for ($i = 0; $bytes > 1024; $i++) {
+        while ($bytes >= 1024 && $index < count($units) - 1) {
             $bytes /= 1024;
+            $index++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        $value = round($bytes, $index === 0 ? 0 : 1);
+
+        return str_replace('.', ',', (string) $value) . ' ' . $units[$index];
     }
 }

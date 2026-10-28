@@ -10,7 +10,6 @@ import {
     ArrowRightOnRectangleIcon,
     ChartBarIcon,
     Cog6ToothIcon,
-    DocumentIcon,
     FolderIcon,
     HomeIcon,
     LinkIcon,
@@ -27,8 +26,6 @@ const navigation = [
         label: 'Contenu',
         items: [
             { name: 'Projets', href: '/projects', icon: FolderIcon },
-            // Raccourci vers la liste des projets (pas d'index /files côté routes)
-            { name: 'Fichiers', href: '/projects', icon: DocumentIcon, activeMatch: '/files' },
             { name: 'Équipe', href: '/team', icon: UsersIcon },
             { name: 'Clients', href: '/clients', icon: UserGroupIcon },
             { name: 'Partages', href: '/shares', icon: LinkIcon },

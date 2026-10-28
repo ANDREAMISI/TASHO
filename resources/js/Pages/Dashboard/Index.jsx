@@ -1,112 +1,166 @@
 import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import StatsCard from '@/Components/Dashboard/StatsCard';
-import ActivityFeed from '@/Components/Dashboard/ActivityFeed';
-import StorageChart from '@/Components/Dashboard/StorageChart';
 import ActivityChart from '@/Components/Dashboard/ActivityChart';
+import ActivityFeed from '@/Components/Dashboard/ActivityFeed';
+import GettingStarted from '@/Components/Dashboard/GettingStarted';
+import RecentProjects from '@/Components/Dashboard/RecentProjects';
+import StatsCard from '@/Components/Dashboard/StatsCard';
+import StorageChart from '@/Components/Dashboard/StorageChart';
 import StorageUsage from '@/Components/Dashboard/StorageUsage';
-import { FolderIcon, DocumentIcon, UsersIcon, ChartBarIcon } from '@/Components/Icons';
+import {
+    BoltIcon,
+    CloudIcon,
+    DocumentIcon,
+    FolderIcon,
+    PlusIcon,
+    UsersIcon,
+} from '@/Components/Icons';
+import { formatBytes, formatNumber, plural } from '@/utils/format';
+
+function greeting() {
+    const hour = new Date().getHours();
+
+    if (hour < 6) return 'Bonne nuit';
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+
+    return 'Bonsoir';
+}
+
+function todayLabel() {
+    return new Intl.DateTimeFormat('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    }).format(new Date());
+}
 
 export default function Dashboard({ auth, stats, team }) {
-    const { projects, files, clients, activity, storage, trends } = stats;
+    const { projects, files, clients, storage, activity, plan, recent_projects: recentProjects } =
+        stats;
+
+    const firstName = (auth.user?.name || '').split(' ')[0];
 
     return (
         <AuthenticatedLayout user={auth.user}>
-            <Head title="Dashboard - TASHO" />
+            <Head title="Tableau de bord - TASHO" />
 
-            <div className="py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h1 className="text-2xl font-semibold text-gray-900">
-                                Dashboard
+            <div className="mx-auto w-full max-w-7xl space-y-6">
+                {/* En-tête */}
+                <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+                                {greeting()}
+                                {firstName ? `, ${firstName}` : ''}
                             </h1>
-                            <p className="mt-1 text-sm text-gray-500">
-                                {team?.name || 'Mon Espace'} · Bienvenue !
-                            </p>
+
+                            {plan?.name && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-tasho-primary/10 px-2.5 py-0.5 text-xs font-medium text-tasho-primary">
+                                    <BoltIcon className="h-3.5 w-3.5" />
+                                    Plan {plan.name}
+                                </span>
+                            )}
                         </div>
-                        <div className="flex space-x-3">
-                            <Link
-                                href={route('projects.create')}
-                                className="bg-tasho-primary text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-tasho-primary/90"
-                            >
-                                + Nouveau Projet
-                            </Link>
-                        </div>
+
+                        <p className="mt-1 text-sm text-gray-500">
+                            Voici l'activité de{' '}
+                            <span className="font-medium text-gray-700">{team?.name}</span> ·{' '}
+                            {todayLabel()}
+                        </p>
                     </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                            href={route('projects.index')}
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+                        >
+                            Voir les projets
+                        </Link>
+
+                        <Link
+                            href={route('projects.create')}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
+                        >
+                            <PlusIcon className="h-4 w-4" />
+                            Nouveau projet
+                        </Link>
+                    </div>
+                </header>
+
+                <GettingStarted projects={projects} files={files} clients={clients} />
+
+                {/* Indicateurs */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <StatsCard
+                        label="Projets"
+                        value={formatNumber(projects.total)}
+                        icon={FolderIcon}
+                        accent="indigo"
+                        hint={`${plural(projects.active, 'actif', 'actifs')} · ${plural(
+                            projects.completed,
+                            'terminé',
+                            'terminés',
+                        )}`}
+                        trend={projects.trend}
+                        href={route('projects.index')}
+                    />
+
+                    <StatsCard
+                        label="Fichiers"
+                        value={formatNumber(files.total)}
+                        icon={DocumentIcon}
+                        accent="sky"
+                        hint={`${plural(files.images, 'image', 'images')} · ${plural(
+                            files.videos,
+                            'vidéo',
+                            'vidéos',
+                        )} · ${plural(files.documents, 'document', 'documents')}`}
+                        trend={files.trend}
+                        href={route('projects.index')}
+                    />
+
+                    <StatsCard
+                        label="Clients"
+                        value={formatNumber(clients.total)}
+                        icon={UsersIcon}
+                        accent="emerald"
+                        hint={`${plural(clients.active, 'client actif', 'clients actifs')} ce mois-ci`}
+                        trend={clients.trend}
+                        href={route('clients.index')}
+                    />
+
+                    <StatsCard
+                        label="Stockage"
+                        value={formatBytes(storage.used)}
+                        icon={CloudIcon}
+                        accent="amber"
+                        hint={`sur ${formatBytes(storage.limit)} inclus dans votre plan`}
+                        href={route('settings.subscription')}
+                    >
+                        <StorageUsage
+                            used={storage.used}
+                            limit={storage.limit}
+                            percentage={storage.percentage}
+                        />
+                    </StatsCard>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="mt-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatsCard
-                            title="Projets"
-                            value={projects?.total || 0}
-                            icon="📁"
-                            subtitle={`${projects?.active || 0} actifs`}
-                        />
-                        <StatsCard
-                            title="Fichiers"
-                            value={files?.total || 0}
-                            icon="📄"
-                            subtitle={`${files?.images || 0} images, ${files?.videos || 0} vidéos`}
-                        />
-                        <StatsCard
-                            title="Clients"
-                            value={clients?.total || 0}
-                            icon="👤"
-                            subtitle={`${clients?.active || 0} actifs ce mois`}
-                        />
-                        <StatsCard
-                            title="Équipe"
-                            value={team?.members?.length || 1}
-                            icon="👥"
-                            subtitle={team?.owner?.name || 'Vous'}
-                        />
-                    </div>
+                {/* Activité + stockage */}
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                    <ActivityChart series={activity.series} className="xl:col-span-2" />
+                    <StorageChart
+                        types={storage.by_type}
+                        used={storage.used}
+                        limit={storage.limit}
+                    />
                 </div>
 
-                {/* Storage Usage */}
-                <div className="mt-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-white shadow-sm rounded-lg p-6">
-                        <h3 className="text-lg font-medium text-gray-900">Stockage</h3>
-                        <div className="mt-4">
-                            <StorageUsage 
-                                used={storage?.used || 0} 
-                                limit={storage?.limit || 1073741824} 
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Charts Row */}
-                <div className="mt-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* File Distribution */}
-                        <div className="bg-white shadow-sm rounded-lg p-6">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4">Répartition des fichiers</h3>
-                            <StorageChart data={files || {}} />
-                        </div>
-
-                        {/* Activity Chart */}
-                        <div className="bg-white shadow-sm rounded-lg p-6">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4">Activité (30 derniers jours)</h3>
-                            <ActivityChart 
-                                data={trends?.daily_activity || {}} 
-                                labels={trends?.labels || []} 
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Recent Activity */}
-                <div className="mt-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-white shadow-sm rounded-lg p-6">
-                        <h3 className="text-lg font-medium text-gray-900">Activité récente</h3>
-                        <div className="mt-4">
-                            <ActivityFeed activities={activity || []} />
-                        </div>
-                    </div>
+                {/* Projets + flux d'activité */}
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                    <RecentProjects projects={recentProjects} className="xl:col-span-2" />
+                    <ActivityFeed activities={activity.recent} />
                 </div>
             </div>
         </AuthenticatedLayout>

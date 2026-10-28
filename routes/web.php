@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\TeamController as AdminTeamController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SettingsController;
+use App\Models\Project;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -128,28 +129,21 @@ Route::middleware('auth')->group(function () {
 
     // ============================================================
     // Routes Fichiers
+    // Les fichiers vivent désormais dans l'espace projet (onglet Fichiers).
     // ============================================================
     Route::prefix('files')->name('files.')->group(function () {
-        Route::get('/', function () {
-            $user = auth()->user();
-            $team = $user->teams()->first();
+        Route::get('/', fn () => redirect()->route('projects.index'))->name('home');
 
-            if (!$team) {
-                return redirect()->route('team.create');
-            }
+        Route::get('/{project}', function (Project $project) {
+            return redirect()->route('projects.show', [
+                'project' => $project->id,
+                'tab' => 'files',
+            ]);
+        })->name('index');
 
-            $project = $team->projects()->latest()->first();
-
-            if (!$project) {
-                return redirect()->route('projects.create');
-            }
-
-            return redirect()->route('files.index', $project);
-        })->name('home');
-
-        Route::get('/{project}', [FileController::class, 'index'])->name('index');
         Route::post('/upload', [FileController::class, 'upload'])->name('upload');
         Route::post('/upload-chunk', [FileController::class, 'uploadChunk'])->name('upload.chunk');
+        Route::get('/{file}/stream', [FileController::class, 'stream'])->name('stream');
         Route::get('/{file}/download', [FileController::class, 'download'])->name('download');
         Route::get('/{file}/preview', [FileController::class, 'preview'])->name('preview');
         Route::delete('/{file}', [FileController::class, 'destroy'])->name('destroy');
