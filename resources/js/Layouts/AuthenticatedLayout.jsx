@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Avatar } from 'primereact/avatar';
 import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
 import { Sidebar } from 'primereact/sidebar';
+import AppTopbar from '@/Components/AppTopbar';
 import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import {
@@ -14,7 +14,6 @@ import {
     FolderIcon,
     HomeIcon,
     LinkIcon,
-    MagnifyingGlassIcon,
     UserGroupIcon,
     UsersIcon,
 } from '@/Components/Icons';
@@ -72,6 +71,25 @@ export default function AuthenticatedLayout({ children, user }) {
         setDesktopOpen(false);
         setMobileOpen(false);
     };
+
+    const userMenuItems = [
+        {
+            label: 'Profil',
+            icon: 'pi pi-user',
+            command: () => router.visit('/profile'),
+        },
+        {
+            label: 'Paramètres',
+            icon: 'pi pi-cog',
+            command: () => router.visit('/settings'),
+        },
+        { separator: true },
+        {
+            label: 'Déconnexion',
+            icon: 'pi pi-sign-out',
+            command: () => router.post('/logout'),
+        },
+    ];
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -184,66 +202,13 @@ export default function AuthenticatedLayout({ children, user }) {
                 }`}
             >
                 {/* Barre supérieure */}
-                <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/90 px-4 backdrop-blur sm:px-6">
-                    <Button
-                        icon="pi pi-bars"
-                        text
-                        rounded
-                        onClick={toggleSidebar}
-                        aria-label="Afficher ou masquer le menu"
-                        className="!h-9 !w-9 !p-0 !text-gray-600 hover:!bg-gray-100"
-                    />
-
-                    <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900">
-                            {activeItem?.name || 'Espace client'}
-                        </p>
-                        <p className="hidden text-xs text-gray-500 sm:block">
-                            Espace client TASHO
-                        </p>
-                    </div>
-
-                    <div className="ml-auto flex items-center gap-2 sm:gap-3">
-                        <div className="relative hidden md:block">
-                            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                            <InputText
-                                placeholder="Rechercher..."
-                                className="!h-9 !w-56 !rounded-lg !border-gray-200 !py-0 !pl-9 !text-sm"
-                            />
-                        </div>
-
-                        <Button
-                            icon="pi pi-bell"
-                            text
-                            rounded
-                            aria-label="Notifications"
-                            className="relative !h-9 !w-9 !p-0 !text-gray-600 hover:!bg-gray-100"
-                        >
-                            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-                        </Button>
-
-                        <div className="hidden h-6 w-px bg-gray-200 sm:block" />
-
-                        <Link
-                            href="/profile"
-                            className="hidden items-center gap-2 rounded-lg px-1 py-1 transition-colors hover:bg-gray-100 sm:flex"
-                        >
-                            <Avatar
-                                label={initials}
-                                shape="circle"
-                                className="!h-8 !w-8 !bg-tasho-primary !text-xs !font-semibold !text-white"
-                            />
-                            <div className="hidden text-right lg:block">
-                                <p className="max-w-40 truncate text-sm font-medium text-gray-900">
-                                    {user?.name || 'Utilisateur'}
-                                </p>
-                                <p className="max-w-40 truncate text-xs text-gray-500">
-                                    {user?.email || ''}
-                                </p>
-                            </div>
-                        </Link>
-                    </div>
-                </header>
+                <AppTopbar
+                    title={activeItem?.name || 'Espace client'}
+                    subtitle="Espace client TASHO"
+                    user={user}
+                    onToggleSidebar={toggleSidebar}
+                    userMenuItems={userMenuItems}
+                />
 
                 <main className="p-4 sm:p-6 lg:p-8">{children}</main>
             </div>
