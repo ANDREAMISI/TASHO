@@ -1,3 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@layer tailwind-base, primereact, tailwind-utilities;
+
+@layer tailwind-base {
+    @tailwind base;
+}
+
+@layer tailwind-utilities {
+    @tailwind components;
+    @tailwind utilities;
+}
+
+/*
+ * PrimeReact integration
+ * The components inject their own styles inside the "primereact" layer.
+ */
+.app-sidebar.p-sidebar {
+    border-right: 1px solid #e5e7eb;
+    box-shadow: none;
+}
+
+.app-sidebar .p-sidebar-header {
+    display: none;
+}
+
+.app-sidebar .p-sidebar-content {
+    padding: 0;
+}

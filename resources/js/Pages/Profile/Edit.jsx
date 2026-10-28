@@ -4,7 +4,7 @@ import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
-export default function Edit({ status }) {
+export default function Edit({ status, mustVerifyEmail = false }) {
     return (
         <AuthenticatedLayout
             header={

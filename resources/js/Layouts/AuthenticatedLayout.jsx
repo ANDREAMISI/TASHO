@@ -1,146 +1,137 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
+import { Avatar } from 'primereact/avatar';
+import { Button } from 'primereact/button';
+import { InputText } from 'primereact/inputtext';
+import { Sidebar } from 'primereact/sidebar';
+import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';
+import useMediaQuery from '@/hooks/useMediaQuery';
 import {
-    Squares2X2Icon,
-    HomeIcon,
-    FolderIcon,
-    DocumentIcon,
-    UsersIcon,
-    UserGroupIcon,
-    LinkIcon,
+    ArrowRightOnRectangleIcon,
     ChartBarIcon,
     Cog6ToothIcon,
-    BellIcon,
+    DocumentIcon,
+    FolderIcon,
+    HomeIcon,
+    LinkIcon,
     MagnifyingGlassIcon,
-    ChevronDown,
+    UserGroupIcon,
+    UsersIcon,
 } from '@/Components/Icons';
 
-// ✅ Correction : Utiliser des URLs directes au lieu de route() qui peut causer des erreurs
 const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-    { name: 'Projets', href: '/projects', icon: FolderIcon },
-    { name: 'Fichiers', href: '/projects', icon: DocumentIcon }, // ✅ Redirige vers projets
-    { name: 'Équipe', href: '/team', icon: UsersIcon },
-    { name: 'Clients', href: '/clients', icon: UserGroupIcon },
-    { name: 'Partages', href: '/shares', icon: LinkIcon },
-    { name: 'Activité', href: '/activity', icon: ChartBarIcon },
-    { name: 'Paramètres', href: '/settings', icon: Cog6ToothIcon },
+    {
+        label: 'Principal',
+        items: [{ name: 'Dashboard', href: '/dashboard', icon: HomeIcon }],
+    },
+    {
+        label: 'Contenu',
+        items: [
+            { name: 'Projets', href: '/projects', icon: FolderIcon },
+            // Raccourci vers la liste des projets (pas d'index /files côté routes)
+            { name: 'Fichiers', href: '/projects', icon: DocumentIcon, activeMatch: '/files' },
+            { name: 'Équipe', href: '/team', icon: UsersIcon },
+            { name: 'Clients', href: '/clients', icon: UserGroupIcon },
+            { name: 'Partages', href: '/shares', icon: LinkIcon },
+        ],
+    },
+    {
+        label: 'Compte',
+        items: [
+            { name: 'Activité', href: '/activity', icon: ChartBarIcon },
+            { name: 'Paramètres', href: '/settings', icon: Cog6ToothIcon },
+        ],
+    },
 ];
 
 export default function AuthenticatedLayout({ children, user }) {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
     const { url } = usePage();
+    const isDesktop = useMediaQuery('(min-width: 1024px)');
+    const [desktopOpen, setDesktopOpen] = useState(true);
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    const sidebarVisible = isDesktop ? desktopOpen : mobileOpen;
+    const activeItem = navigation
+        .flatMap((group) => group.items)
+        .find((item) => isLinkActive(url, item));
+    const initials = (user?.name || 'Utilisateur').charAt(0).toUpperCase();
+
+    useEffect(() => {
+        setMobileOpen(false);
+    }, [url]);
+
+    const toggleSidebar = () => {
+        if (isDesktop) {
+            setDesktopOpen((value) => !value);
+        } else {
+            setMobileOpen((value) => !value);
+        }
+    };
+
+    const closeSidebar = () => {
+        setDesktopOpen(false);
+        setMobileOpen(false);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Top Navbar */}
-            <nav className="bg-white border-b border-gray-200 fixed w-full z-30 top-0">
-                <div className="px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                            <button
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
-                                aria-label="Toggle sidebar"
-                            >
-                                <Squares2X2Icon className="h-6 w-6" />
-                            </button>
-                            <Link href="/dashboard" className="flex items-center ml-4">
-                                <span className="text-2xl font-bold text-tasho-primary">TASHO</span>
-                            </Link>
+            <Sidebar
+                key={isDesktop ? 'desktop' : 'mobile'}
+                visible={sidebarVisible}
+                position="left"
+                onHide={closeSidebar}
+                showCloseIcon={false}
+                closeOnEscape={!isDesktop}
+                blockScroll={!isDesktop}
+                maskClassName={isDesktop ? '!pointer-events-none !bg-transparent' : ''}
+                className="app-sidebar"
+                style={{ width: '18rem' }}
+            >
+                <div className="flex h-full flex-col bg-white">
+                    {/* Logo */}
+                    <div className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-200 px-4">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tasho-primary text-sm font-bold text-white">
+                            T
                         </div>
-
-                        <div className="flex items-center space-x-4">
-                            {/* Search */}
-                            <div className="hidden md:flex items-center bg-gray-100 rounded-md px-3 py-1.5">
-                                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Rechercher..."
-                                    className="bg-transparent border-none focus:outline-none text-sm text-gray-600 w-48 ml-2"
-                                />
-                            </div>
-
-                            {/* Notifications */}
-                            <button className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full transition-colors relative">
-                                <BellIcon className="h-6 w-6" />
-                                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                            </button>
-
-                            {/* User Menu */}
-                            <div className="flex items-center space-x-3">
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-medium text-gray-700">{user.name}</p>
-                                    <p className="text-xs text-gray-400">{user.email}</p>
-                                </div>
-                                <div className="hidden sm:flex items-center space-x-2">
-                                    <Link
-                                        href="/profile"
-                                        className="text-sm text-gray-600 hover:text-gray-800 rounded-md px-3 py-2 hover:bg-gray-100 transition"
-                                    >
-                                        Profil
-                                    </Link>
-                                    <Link
-                                        href="/logout"
-                                        method="post"
-                                        as="button"
-                                        className="text-sm text-gray-600 hover:text-gray-800 rounded-md px-3 py-2 hover:bg-gray-100 transition"
-                                    >
-                                        Déconnexion
-                                    </Link>
-                                </div>
-                                <div className="relative">
-                                    <button className="flex items-center space-x-2 group">
-                                        <div className="h-8 w-8 rounded-full bg-tasho-primary text-white flex items-center justify-center text-sm font-semibold">
-                                            {user.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
-                                    </button>
-                                </div>
-                            </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-base font-bold leading-tight text-gray-900">TASHO</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-tasho-primary">
+                                Espace client
+                            </p>
                         </div>
+                        <Button
+                            icon="pi pi-times"
+                            text
+                            rounded
+                            onClick={closeSidebar}
+                            aria-label="Fermer le menu"
+                            className="!h-8 !w-8 !p-0 !text-gray-500 lg:!hidden"
+                        />
                     </div>
-                </div>
-            </nav>
 
-            {/* Sidebar */}
-            <div className={`fixed inset-y-0 left-0 z-20 w-64 bg-white border-r border-gray-200 transform ${
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } transition-transform duration-300 ease-in-out pt-16`}>
-                <div className="h-full flex flex-col overflow-y-auto">
-                    <nav className="flex-1 px-2 py-4 space-y-1">
-                        {navigation.map((item) => {
-                            const isActive = url === item.href || url.startsWith(item.href + '/');
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    className={`
-                                        group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors
-                                        ${isActive
-                                            ? 'bg-tasho-primary/10 text-tasho-primary'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                        }
-                                    `}
-                                >
-                                    <item.icon className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                                        isActive ? 'text-tasho-primary' : 'text-gray-400 group-hover:text-gray-500'
-                                    }`} />
-                                    {item.name}
-                                </Link>
-                            );
-                        })}
+                    {/* Navigation */}
+                    <nav className="flex-1 overflow-y-auto px-3 py-4">
+                        <div className="space-y-6">
+                            {navigation.map((group) => (
+                                <SidebarNavGroup
+                                    key={group.label}
+                                    group={group}
+                                    url={url}
+                                    onNavigate={() => setMobileOpen(false)}
+                                />
+                            ))}
+                        </div>
                     </nav>
 
-                    {/* Plan info */}
-                    <div className="p-4 border-t border-gray-200">
-                        <div className="bg-tasho-primary/10 rounded-lg p-4">
+                    {/* Plan */}
+                    <div className="shrink-0 border-t border-gray-200 p-3">
+                        <div className="rounded-lg bg-tasho-primary/10 p-4">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs text-gray-500 font-medium">Plan actuel</p>
+                                    <p className="text-xs font-medium text-gray-500">Plan actuel</p>
                                     <p className="text-sm font-semibold text-tasho-primary">Studio</p>
                                 </div>
-                                <div className="bg-white/50 rounded-full px-2 py-1">
+                                <div className="rounded-full bg-white/50 px-2 py-1">
                                     <span className="text-xs font-medium text-tasho-primary">PRO</span>
                                 </div>
                             </div>
@@ -149,28 +140,112 @@ export default function AuthenticatedLayout({ children, user }) {
                                     <span>Stockage utilisé</span>
                                     <span>34.2 GB / 100 GB</span>
                                 </div>
-                                <div className="mt-1 w-full bg-white/50 rounded-full h-1.5">
-                                    <div className="bg-tasho-primary h-1.5 rounded-full" style={{ width: '34%' }} />
+                                <div className="mt-1 h-1.5 w-full rounded-full bg-white/50">
+                                    <div
+                                        className="h-1.5 rounded-full bg-tasho-primary"
+                                        style={{ width: '34%' }}
+                                    />
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Utilisateur */}
+                    <div className="shrink-0 border-t border-gray-200 p-3">
+                        <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-2">
+                            <Avatar
+                                label={initials}
+                                shape="circle"
+                                className="!h-9 !w-9 !bg-tasho-primary !text-sm !font-semibold !text-white"
+                            />
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-gray-900">
+                                    {user?.name || 'Utilisateur'}
+                                </p>
+                                <p className="truncate text-xs text-gray-500">{user?.email || ''}</p>
+                            </div>
+                            <Link
+                                href="/logout"
+                                method="post"
+                                as="button"
+                                aria-label="Déconnexion"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            >
+                                <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                            </Link>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </Sidebar>
 
-            {/* Overlay for mobile */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/20 z-10 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+            <div
+                className={`min-h-screen transition-[padding] duration-300 ease-in-out ${
+                    isDesktop && desktopOpen ? 'lg:pl-72' : ''
+                }`}
+            >
+                {/* Barre supérieure */}
+                <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/90 px-4 backdrop-blur sm:px-6">
+                    <Button
+                        icon="pi pi-bars"
+                        text
+                        rounded
+                        onClick={toggleSidebar}
+                        aria-label="Afficher ou masquer le menu"
+                        className="!h-9 !w-9 !p-0 !text-gray-600 hover:!bg-gray-100"
+                    />
 
-            {/* Main Content */}
-            <div className={`pt-16 ${sidebarOpen ? 'ml-64' : 'ml-0'} transition-margin duration-300 ease-in-out`}>
-                <main className="p-6">
-                    {children}
-                </main>
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-900">
+                            {activeItem?.name || 'Espace client'}
+                        </p>
+                        <p className="hidden text-xs text-gray-500 sm:block">
+                            Espace client TASHO
+                        </p>
+                    </div>
+
+                    <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                        <div className="relative hidden md:block">
+                            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <InputText
+                                placeholder="Rechercher..."
+                                className="!h-9 !w-56 !rounded-lg !border-gray-200 !py-0 !pl-9 !text-sm"
+                            />
+                        </div>
+
+                        <Button
+                            icon="pi pi-bell"
+                            text
+                            rounded
+                            aria-label="Notifications"
+                            className="relative !h-9 !w-9 !p-0 !text-gray-600 hover:!bg-gray-100"
+                        >
+                            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+                        </Button>
+
+                        <div className="hidden h-6 w-px bg-gray-200 sm:block" />
+
+                        <Link
+                            href="/profile"
+                            className="hidden items-center gap-2 rounded-lg px-1 py-1 transition-colors hover:bg-gray-100 sm:flex"
+                        >
+                            <Avatar
+                                label={initials}
+                                shape="circle"
+                                className="!h-8 !w-8 !bg-tasho-primary !text-xs !font-semibold !text-white"
+                            />
+                            <div className="hidden text-right lg:block">
+                                <p className="max-w-40 truncate text-sm font-medium text-gray-900">
+                                    {user?.name || 'Utilisateur'}
+                                </p>
+                                <p className="max-w-40 truncate text-xs text-gray-500">
+                                    {user?.email || ''}
+                                </p>
+                            </div>
+                        </Link>
+                    </div>
+                </header>
+
+                <main className="p-4 sm:p-6 lg:p-8">{children}</main>
             </div>
         </div>
     );

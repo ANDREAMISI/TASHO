@@ -1,146 +1,220 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
+import { Avatar } from 'primereact/avatar';
+import { Button } from 'primereact/button';
+import { InputText } from 'primereact/inputtext';
+import { Sidebar } from 'primereact/sidebar';
+import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';
+import useMediaQuery from '@/hooks/useMediaQuery';
 import {
-    Squares2X2Icon,
-    UsersIcon,
-    CreditCardIcon,
+    ArrowRightOnRectangleIcon,
     ChartBarIcon,
     Cog6ToothIcon,
-    BellIcon,
-    MagnifyingGlassIcon,
-    ChevronDownIcon,
-    UserGroupIcon,
-    DocumentIcon,
-    ArrowRightOnRectangleIcon,
+    CreditCardIcon,
     CurrencyDollarIcon,
+    DocumentIcon,
+    MagnifyingGlassIcon,
+    UserGroupIcon,
+    UsersIcon,
 } from '@/Components/Icons';
 
 const navigation = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
-    { name: 'Utilisateurs', href: '/admin/users', icon: UsersIcon },
-    { name: 'Plans', href: '/admin/plans', icon: CurrencyDollarIcon },
-    { name: 'Abonnements', href: '/admin/subscriptions', icon: CreditCardIcon },
-    { name: 'Équipes', href: '/admin/teams', icon: UserGroupIcon },
-    { name: 'Activité', href: '/admin/activity', icon: DocumentIcon },
-    { name: 'Paramètres', href: '/admin/settings', icon: Cog6ToothIcon },
+    {
+        label: 'Général',
+        items: [
+            { name: 'Tableau de bord', href: '/admin/dashboard', icon: ChartBarIcon },
+        ],
+    },
+    {
+        label: 'Gestion',
+        items: [
+            { name: 'Utilisateurs', href: '/admin/users', icon: UsersIcon },
+            { name: 'Plans', href: '/admin/plans', icon: CurrencyDollarIcon },
+            { name: 'Abonnements', href: '/admin/subscriptions', icon: CreditCardIcon },
+            { name: 'Équipes', href: '/admin/teams', icon: UserGroupIcon },
+        ],
+    },
+    {
+        label: 'Système',
+        items: [
+            { name: 'Activité', href: '/admin/activity', icon: DocumentIcon },
+            { name: 'Paramètres', href: '/admin/settings', icon: Cog6ToothIcon },
+        ],
+    },
 ];
 
 export default function AdminLayout({ children, user }) {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
     const { url } = usePage();
+    const isDesktop = useMediaQuery('(min-width: 1024px)');
+    const [desktopOpen, setDesktopOpen] = useState(true);
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    const sidebarVisible = isDesktop ? desktopOpen : mobileOpen;
+    const activeItem = navigation
+        .flatMap((group) => group.items)
+        .find((item) => isLinkActive(url, item));
+    const initials = (user?.name || 'Administrateur').charAt(0).toUpperCase();
+
+    useEffect(() => {
+        setMobileOpen(false);
+    }, [url]);
+
+    const toggleSidebar = () => {
+        if (isDesktop) {
+            setDesktopOpen((value) => !value);
+        } else {
+            setMobileOpen((value) => !value);
+        }
+    };
+
+    const closeSidebar = () => {
+        setDesktopOpen(false);
+        setMobileOpen(false);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Top Navbar */}
-            <nav className="bg-tasho-dark text-white fixed w-full z-30 top-0">
-                <div className="px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                            <button
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="p-2 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition"
-                            >
-                                <Squares2X2Icon className="h-6 w-6" />
-                            </button>
-                            <Link href="/admin/dashboard" className="flex items-center ml-4">
-                                <span className="text-2xl font-bold text-white">TASHO</span>
-                                <span className="ml-2 text-xs bg-tasho-primary px-2 py-0.5 rounded-full text-white">
-                                    Admin
-                                </span>
-                            </Link>
+            <Sidebar
+                key={isDesktop ? 'desktop' : 'mobile'}
+                visible={sidebarVisible}
+                position="left"
+                onHide={closeSidebar}
+                showCloseIcon={false}
+                closeOnEscape={!isDesktop}
+                blockScroll={!isDesktop}
+                maskClassName={isDesktop ? '!pointer-events-none !bg-transparent' : ''}
+                className="app-sidebar"
+                style={{ width: '18rem' }}
+            >
+                <div className="flex h-full flex-col bg-white">
+                    {/* Logo */}
+                    <div className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-200 px-4">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tasho-primary text-sm font-bold text-white">
+                            T
                         </div>
-
-                        <div className="flex items-center space-x-4">
-                            <button className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition relative">
-                                <BellIcon className="h-6 w-6" />
-                                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                            </button>
-
-                            <div className="flex items-center space-x-3">
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-medium text-white">{user.name}</p>
-                                    <p className="text-xs text-white/70">Super Admin</p>
-                                </div>
-                                <div className="h-8 w-8 rounded-full bg-tasho-primary text-white flex items-center justify-center text-sm font-semibold">
-                                    {user.name.charAt(0).toUpperCase()}
-                                </div>
-                                <Link
-                                    href="/logout"
-                                    method="post"
-                                    as="button"
-                                    className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition"
-                                    title="Déconnexion"
-                                >
-                                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                                </Link>
-                            </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-base font-bold leading-tight text-gray-900">TASHO</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-tasho-primary">
+                                Administration
+                            </p>
                         </div>
+                        <Button
+                            icon="pi pi-times"
+                            text
+                            rounded
+                            onClick={closeSidebar}
+                            aria-label="Fermer le menu"
+                            className="!h-8 !w-8 !p-0 !text-gray-500 lg:!hidden"
+                        />
                     </div>
-                </div>
-            </nav>
 
-            {/* Sidebar */}
-            <div className={`fixed inset-y-0 left-0 z-20 w-64 bg-white border-r border-gray-200 transform ${
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } transition-transform duration-300 ease-in-out pt-16`}>
-                <div className="h-full flex flex-col overflow-y-auto">
-                    <nav className="flex-1 px-2 py-4 space-y-1">
-                        {navigation.map((item) => {
-                            const isActive = url === item.href || url.startsWith(item.href + '/');
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    className={`
-                                        group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors
-                                        ${isActive
-                                            ? 'bg-tasho-primary/10 text-tasho-primary'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                        }
-                                    `}
-                                >
-                                    <item.icon className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                                        isActive ? 'text-tasho-primary' : 'text-gray-400 group-hover:text-gray-500'
-                                    }`} />
-                                    {item.name}
-                                </Link>
-                            );
-                        })}
-                    </nav> 
-
-                    <div className="p-4 border-t border-gray-200">
-                        <div className="bg-tasho-primary/10 rounded-lg p-3">
-                            <p className="text-xs text-gray-500">Connecté en tant que</p>
-                            <p className="text-sm font-medium text-gray-900">{user.email}</p>
+                    {/* Navigation */}
+                    <nav className="flex-1 overflow-y-auto px-3 py-4">
+                        <div className="space-y-6">
+                            {navigation.map((group) => (
+                                <SidebarNavGroup
+                                    key={group.label}
+                                    group={group}
+                                    url={url}
+                                    onNavigate={() => setMobileOpen(false)}
+                                />
+                            ))}
                         </div>
-                        <div className="mt-3">
+                    </nav>
+
+                    {/* Utilisateur */}
+                    <div className="shrink-0 border-t border-gray-200 p-3">
+                        <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-2">
+                            <Avatar
+                                label={initials}
+                                shape="circle"
+                                className="!h-9 !w-9 !bg-tasho-primary !text-sm !font-semibold !text-white"
+                            />
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-gray-900">
+                                    {user?.name || 'Administrateur'}
+                                </p>
+                                <p className="truncate text-xs text-gray-500">{user?.email || ''}</p>
+                            </div>
                             <Link
                                 href="/logout"
                                 method="post"
                                 as="button"
-                                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition"
+                                aria-label="Déconnexion"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                             >
-                                <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
-                                Déconnexion
+                                <ArrowRightOnRectangleIcon className="h-4 w-4" />
                             </Link>
                         </div>
                     </div>
                 </div>
-            </div>
+            </Sidebar>
 
-            {/* Overlay */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/20 z-10 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+            <div
+                className={`min-h-screen transition-[padding] duration-300 ease-in-out ${
+                    isDesktop && desktopOpen ? 'lg:pl-72' : ''
+                }`}
+            >
+                {/* Barre supérieure */}
+                <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/90 px-4 backdrop-blur sm:px-6">
+                    <Button
+                        icon="pi pi-bars"
+                        text
+                        rounded
+                        onClick={toggleSidebar}
+                        aria-label="Afficher ou masquer le menu"
+                        className="!h-9 !w-9 !p-0 !text-gray-600 hover:!bg-gray-100"
+                    />
 
-            {/* Main Content */}
-            <div className={`pt-16 ${sidebarOpen ? 'ml-64' : 'ml-0'} transition-margin duration-300 ease-in-out`}>
-                <main className="p-6">
-                    {children}
-                </main>
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-900">
+                            {activeItem?.name || 'Administration'}
+                        </p>
+                        <p className="hidden text-xs text-gray-500 sm:block">
+                            Panneau d'administration TASHO
+                        </p>
+                    </div>
+
+                    <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                        <div className="relative hidden md:block">
+                            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <InputText
+                                placeholder="Rechercher..."
+                                className="!h-9 !w-56 !rounded-lg !border-gray-200 !py-0 !pl-9 !text-sm"
+                            />
+                        </div>
+
+                        <Button
+                            icon="pi pi-bell"
+                            text
+                            rounded
+                            aria-label="Notifications"
+                            className="relative !h-9 !w-9 !p-0 !text-gray-600 hover:!bg-gray-100"
+                        >
+                            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+                        </Button>
+
+                        <div className="hidden h-6 w-px bg-gray-200 sm:block" />
+
+                        <div className="hidden items-center gap-2 sm:flex">
+                            <Avatar
+                                label={initials}
+                                shape="circle"
+                                className="!h-8 !w-8 !bg-tasho-primary !text-xs !font-semibold !text-white"
+                            />
+                            <div className="hidden text-right lg:block">
+                                <p className="max-w-40 truncate text-sm font-medium text-gray-900">
+                                    {user?.name || 'Administrateur'}
+                                </p>
+                                <p className="max-w-40 truncate text-xs text-gray-500">
+                                    {user?.email || ''}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <main className="p-4 sm:p-6 lg:p-8">{children}</main>
             </div>
         </div>
     );

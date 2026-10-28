@@ -1,4 +1,6 @@
 import '../css/app.css';
+import 'primereact/resources/themes/lara-light-indigo/theme.css';
+import 'primeicons/primeicons.css';
 import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/react';
