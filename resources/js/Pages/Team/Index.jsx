@@ -1,40 +1,81 @@
-import { Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { InputText } from 'primereact/inputtext';
+import { InputTextarea } from 'primereact/inputtextarea';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { 
-    PlusIcon, 
-    UsersIcon, 
+import FormDialog from '@/Components/Prime/FormDialog';
+import FormField from '@/Components/Prime/FormField';
+import {
+    PlusIcon,
+    UsersIcon,
     UserGroupIcon,
     ArrowRightIcon,
-    HomeIcon 
 } from '@/Components/Icons';
 
-export default function TeamIndex({ auth, teams, currentTeam }) {
+export default function TeamIndex({ auth, teams, currentTeam, openCreate = false }) {
+    const [createOpen, setCreateOpen] = useState(Boolean(openCreate));
+
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+        name: '',
+        description: '',
+    });
+
+    useEffect(() => {
+        if (openCreate) {
+            setCreateOpen(true);
+        }
+    }, [openCreate]);
+
+    const close = () => {
+        if (processing) {
+            return;
+        }
+
+        setCreateOpen(false);
+        reset();
+        clearErrors();
+    };
+
+    const submit = (event) => {
+        event.preventDefault();
+
+        post(route('team.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setCreateOpen(false);
+                reset();
+                clearErrors();
+            },
+        });
+    };
+
     return (
         <AuthenticatedLayout user={auth.user}>
             <Head title="Équipes - TASHO" />
 
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h1 className="text-2xl font-semibold text-gray-900">Équipes</h1>
                             <p className="mt-1 text-sm text-gray-500">
                                 Gérez vos équipes et collaborateurs
                             </p>
                         </div>
-                        <Link
-                            href={route('team.create')}
-                            className="inline-flex items-center px-4 py-2 bg-tasho-primary border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-tasho-primary/90 focus:outline-none focus:ring-2 focus:ring-tasho-primary focus:ring-offset-2 transition"
+                        <button
+                            type="button"
+                            onClick={() => setCreateOpen(true)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90"
                         >
-                            <PlusIcon className="h-4 w-4 mr-2" />
+                            <PlusIcon className="h-4 w-4" />
                             Créer une équipe
-                        </Link>
+                        </button>
                     </div>
 
                     {/* Current Team */}
                     {currentTeam && (
                         <div className="mt-6 bg-white shadow-sm rounded-lg p-6">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex items-center space-x-4">
                                     <div className="h-16 w-16 rounded-full bg-tasho-primary/10 flex items-center justify-center">
                                         <UserGroupIcon className="h-8 w-8 text-tasho-primary" />
@@ -81,7 +122,7 @@ export default function TeamIndex({ auth, teams, currentTeam }) {
                                                     {team.name}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    Propriétaire: {team.owner.name}
+                                                    Propriétaire : {team.owner?.name}
                                                 </p>
                                             </div>
                                         </div>
@@ -106,18 +147,69 @@ export default function TeamIndex({ auth, teams, currentTeam }) {
                                 Commencez par créer votre première équipe
                             </p>
                             <div className="mt-6">
-                                <Link
-                                    href={route('team.create')}
-                                    className="inline-flex items-center px-4 py-2 bg-tasho-primary border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-tasho-primary/90"
+                                <button
+                                    type="button"
+                                    onClick={() => setCreateOpen(true)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-tasho-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90"
                                 >
-                                    <PlusIcon className="h-4 w-4 mr-2" />
+                                    <PlusIcon className="h-4 w-4" />
                                     Créer une équipe
-                                </Link>
+                                </button>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
+
+            <FormDialog
+                visible={createOpen}
+                onHide={close}
+                title="Créer une équipe"
+                description="Un espace partagé pour vos projets et vos clients."
+                icon="pi pi-users"
+                formId="team-form"
+                onSubmit={submit}
+                submitLabel={processing ? 'Création…' : 'Créer l’équipe'}
+                processing={processing}
+                width="34rem"
+                closable={!processing}
+            >
+                <form id="team-form" onSubmit={submit} className="space-y-5">
+                    <FormField
+                        label="Nom de l'équipe"
+                        htmlFor="team-name"
+                        required
+                        error={errors.name}
+                    >
+                        <InputText
+                            id="team-name"
+                            value={data.name}
+                            onChange={(event) => setData('name', event.target.value)}
+                            placeholder="Ex : Studio Amisi"
+                            className={errors.name ? 'p-invalid' : ''}
+                            autoFocus
+                        />
+                    </FormField>
+
+                    <FormField
+                        label="Description"
+                        htmlFor="team-description"
+                        error={errors.description}
+                        hint="Facultatif — aidez vos collaborateurs à identifier l'équipe."
+                    >
+                        <InputTextarea
+                            id="team-description"
+                            value={data.description}
+                            onChange={(event) => setData('description', event.target.value)}
+                            rows={3}
+                            autoResize
+                            maxLength={500}
+                            placeholder="Ex : Équipe photo et vidéo"
+                            className={errors.description ? 'p-invalid' : ''}
+                        />
+                    </FormField>
+                </form>
+            </FormDialog>
         </AuthenticatedLayout>
     );
 }

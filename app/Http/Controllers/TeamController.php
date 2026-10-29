@@ -25,7 +25,7 @@ class TeamController extends Controller
     /**
      * Afficher la liste des équipes
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         $teams = $user->teams()->with('owner')->get();
@@ -34,15 +34,8 @@ class TeamController extends Controller
         return Inertia::render('Team/Index', [
             'teams' => $teams,
             'currentTeam' => $currentTeam,
+            'openCreate' => $request->boolean('create'),
         ]);
-    }
-
-    /**
-     * Afficher le formulaire de création d'équipe
-     */
-    public function create()
-    {
-        return Inertia::render('Team/Create');
     }
 
     /**

@@ -30,7 +30,7 @@ class ProjectController extends Controller
         $team = $user->teams()->first();
 
         if (! $team) {
-            return redirect()->route('team.create')
+            return redirect()->route('team.index', ['create' => 1])
                 ->with('info', 'Créez une équipe pour commencer à gérer des projets.');
         }
 
@@ -122,29 +122,10 @@ class ProjectController extends Controller
             'statuses' => $statuses,
             'priorities' => $priorities,
             'team' => ['id' => $team->id, 'name' => $team->name],
-        ]);
-    }
-
-    /**
-     * Afficher le formulaire de création
-     */
-    public function create()
-    {
-        $user = auth()->user();
-        $team = $user->teams()->first();
-
-        if (! $team) {
-            return redirect()->route('team.create')
-                ->with('info', 'Créez une équipe pour commencer à créer des projets.');
-        }
-
-        $clients = Client::where('team_id', $team->id)->get(['id', 'name', 'email']);
-
-        return Inertia::render('Project/Create', [
-            'team' => $team,
-            'clients' => $clients,
-            'statuses' => ['draft', 'active', 'archived', 'completed'],
-            'priorities' => ['low', 'medium', 'high'],
+            'clients' => Client::where('team_id', $team->id)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']),
+            'openCreate' => $request->boolean('create'),
         ]);
     }
 

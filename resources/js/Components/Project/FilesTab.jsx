@@ -3,6 +3,8 @@ import axios from 'axios';
 import { router } from '@inertiajs/react';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
+import { Button } from 'primereact/button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import FilePreviewDialog from './FilePreviewDialog';
 import Pagination from './Pagination';
@@ -395,13 +397,12 @@ export default function FilesTab({
             <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
                     <form onSubmit={submitSearch} className="relative min-w-0 flex-1">
-                        <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="search"
+                        <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <InputText
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder="Rechercher un fichier dans ce projet…"
-                            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tasho-primary focus:outline-none focus:ring-2 focus:ring-tasho-primary/20"
+                            className="w-full !pl-9"
                         />
                     </form>
 
@@ -851,21 +852,23 @@ export default function FilesTab({
                     {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
 
                     <div className="flex justify-end gap-2 pt-1">
-                        <button
+                        <Button
                             type="button"
+                            label="Annuler"
+                            icon="pi pi-times"
+                            severity="secondary"
+                            outlined
                             onClick={closeUpload}
                             disabled={uploading}
-                            className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            Annuler
-                        </button>
-                        <button
+                        />
+                        <Button
                             type="submit"
+                            label={uploading ? `Envoi ${uploadProgress} %` : 'Envoyer'}
+                            icon="pi pi-upload"
+                            loading={uploading}
                             disabled={uploading || uploadFiles.length === 0}
-                            className="rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {uploading ? `Envoi ${uploadProgress} %` : 'Envoyer'}
-                        </button>
+                            className="!bg-tasho-primary !border-tasho-primary"
+                        />
                     </div>
                 </form>
             </Dialog>
@@ -886,13 +889,12 @@ export default function FilesTab({
                         <label className="mb-1 block text-sm font-medium text-gray-700">
                             Nom du dossier
                         </label>
-                        <input
-                            type="text"
+                        <InputText
                             value={folderName}
                             onChange={(event) => setFolderName(event.target.value)}
                             placeholder="Ex. Photos du shooting"
+                            className="w-full"
                             autoFocus
-                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tasho-primary focus:outline-none focus:ring-2 focus:ring-tasho-primary/20"
                         />
                     </div>
 
@@ -905,20 +907,28 @@ export default function FilesTab({
                     </p>
 
                     <div className="flex justify-end gap-2 pt-1">
-                        <button
+                        <Button
                             type="button"
+                            label="Annuler"
+                            icon="pi pi-times"
+                            severity="secondary"
+                            outlined
                             onClick={() => setFolderOpen(false)}
-                            className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
-                        >
-                            Annuler
-                        </button>
-                        <button
+                        />
+                        <Button
                             type="submit"
+                            label={
+                                folderBusy
+                                    ? 'Enregistrement…'
+                                    : folderTarget
+                                      ? 'Renommer'
+                                      : 'Créer'
+                            }
+                            icon={folderTarget ? 'pi pi-check' : 'pi pi-plus'}
+                            loading={folderBusy}
                             disabled={folderBusy || !folderName.trim()}
-                            className="rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {folderBusy ? 'Enregistrement…' : folderTarget ? 'Renommer' : 'Créer'}
-                        </button>
+                            className="!bg-tasho-primary !border-tasho-primary"
+                        />
                     </div>
                 </form>
             </Dialog>
@@ -939,12 +949,11 @@ export default function FilesTab({
                         <label className="mb-1 block text-sm font-medium text-gray-700">
                             Nom du fichier
                         </label>
-                        <input
-                            type="text"
+                        <InputText
                             value={renameName}
                             onChange={(event) => setRenameName(event.target.value)}
+                            className="w-full"
                             autoFocus
-                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-tasho-primary focus:outline-none focus:ring-2 focus:ring-tasho-primary/20"
                         />
                     </div>
 
@@ -953,20 +962,21 @@ export default function FilesTab({
                     </p>
 
                     <div className="flex justify-end gap-2 pt-1">
-                        <button
+                        <Button
                             type="button"
+                            label="Annuler"
+                            icon="pi pi-times"
+                            severity="secondary"
+                            outlined
                             onClick={() => setRenameFile(null)}
-                            className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
-                        >
-                            Annuler
-                        </button>
-                        <button
+                        />
+                        <Button
                             type="submit"
+                            label="Enregistrer"
+                            icon="pi pi-check"
                             disabled={!renameName.trim()}
-                            className="rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            Enregistrer
-                        </button>
+                            className="!bg-tasho-primary !border-tasho-primary"
+                        />
                     </div>
                 </form>
             </Dialog>

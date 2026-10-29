@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { router, useForm } from '@inertiajs/react';
-import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputSwitch } from 'primereact/inputswitch';
+import { InputText } from 'primereact/inputtext';
+import { InputNumber } from 'primereact/inputnumber';
+import { Password } from 'primereact/password';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
+import FormDialog from '@/Components/Prime/FormDialog';
+import FormField from '@/Components/Prime/FormField';
 import {
     ArrowUpRightIcon,
     CalendarIcon,
@@ -317,22 +321,24 @@ export default function SharesTab({ project, accesses = [], clients = [], canMan
                 )}
             </section>
 
-            <Dialog
+            <FormDialog
                 visible={open}
                 onHide={() => setOpen(false)}
-                header="Nouveau partage"
-                style={{ width: '36rem' }}
-                breakpoints={{ '640px': '94vw' }}
-                modal
-                draggable={false}
-                resizable={false}
+                title="Nouveau partage"
+                description={`Galerie « ${project.title} »`}
+                icon="pi pi-link"
+                formId="project-share-form"
+                onSubmit={submit}
+                submitLabel={form.processing ? 'Création…' : 'Créer le partage'}
+                submitIcon="pi pi-share-alt"
+                processing={form.processing}
+                width="38rem"
+                closable={!form.processing}
             >
-                <form onSubmit={submit} className="space-y-4">
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Client
-                        </label>
+                <form id="project-share-form" onSubmit={submit} className="space-y-4">
+                    <FormField label="Client" htmlFor="project-share-client" error={form.errors.client_id}>
                         <Dropdown
+                            inputId="project-share-client"
                             value={form.data.client_id}
                             options={[
                                 { label: 'Lien libre (sans client)', value: '' },
@@ -349,57 +355,45 @@ export default function SharesTab({ project, accesses = [], clients = [], canMan
                             className="w-full"
                             filter
                         />
-
-                        {form.errors.client_id && (
-                            <p className="mt-1 text-xs text-red-600">{form.errors.client_id}</p>
-                        )}
-                    </div>
+                    </FormField>
 
                     {form.data.client_id === 'new' && (
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">
-                                    Nom
-                                </label>
-                                <input
-                                    type="text"
+                            <FormField label="Nom" htmlFor="project-share-client-name">
+                                <InputText
+                                    id="project-share-client-name"
                                     value={form.data.client_name}
                                     onChange={(event) =>
                                         form.setData('client_name', event.target.value)
                                     }
                                     placeholder="Nom du client"
-                                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tasho-primary focus:outline-none focus:ring-2 focus:ring-tasho-primary/20"
+                                    className="w-full"
                                 />
-                            </div>
+                            </FormField>
 
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">
-                                    E-mail
-                                </label>
-                                <input
+                            <FormField
+                                label="E-mail"
+                                htmlFor="project-share-client-email"
+                                error={form.errors.client_email}
+                            >
+                                <InputText
+                                    id="project-share-client-email"
                                     type="email"
                                     value={form.data.client_email}
                                     onChange={(event) =>
                                         form.setData('client_email', event.target.value)
                                     }
                                     placeholder="client@exemple.com"
-                                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tasho-primary focus:outline-none focus:ring-2 focus:ring-tasho-primary/20"
+                                    className="w-full"
                                 />
-                                {form.errors.client_email && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {form.errors.client_email}
-                                    </p>
-                                )}
-                            </div>
+                            </FormField>
                         </div>
                     )}
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">
-                                Durée du lien
-                            </label>
+                        <FormField label="Durée du lien" htmlFor="project-share-expires">
                             <Dropdown
+                                inputId="project-share-expires"
                                 value={form.data.expires_in_days}
                                 options={EXPIRATION_OPTIONS}
                                 onChange={(event) =>
@@ -407,43 +401,40 @@ export default function SharesTab({ project, accesses = [], clients = [], canMan
                                 }
                                 className="w-full"
                             />
-                        </div>
+                        </FormField>
 
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">
-                                Vues maximum
-                            </label>
-                            <input
-                                type="number"
-                                min="1"
+                        <FormField
+                            label="Vues maximum"
+                            htmlFor="project-share-max-views"
+                            error={form.errors.max_views}
+                        >
+                            <InputNumber
+                                inputId="project-share-max-views"
                                 value={form.data.max_views}
-                                onChange={(event) => form.setData('max_views', event.target.value)}
+                                onValueChange={(event) => form.setData('max_views', event.value)}
+                                min={1}
                                 placeholder="Illimité"
-                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tasho-primary focus:outline-none focus:ring-2 focus:ring-tasho-primary/20"
+                                className="w-full"
                             />
-                            {form.errors.max_views && (
-                                <p className="mt-1 text-xs text-red-600">
-                                    {form.errors.max_views}
-                                </p>
-                            )}
-                        </div>
+                        </FormField>
                     </div>
 
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Mot de passe (optionnel)
-                        </label>
-                        <input
-                            type="text"
+                    <FormField
+                        label="Mot de passe"
+                        htmlFor="project-share-password"
+                        error={form.errors.password}
+                        hint="Optionnel — laissez vide pour un accès direct."
+                    >
+                        <Password
+                            inputId="project-share-password"
                             value={form.data.password}
                             onChange={(event) => form.setData('password', event.target.value)}
+                            toggleMask
+                            feedback={false}
                             placeholder="Laisser vide pour un accès direct"
-                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tasho-primary focus:outline-none focus:ring-2 focus:ring-tasho-primary/20"
+                            className="w-full"
                         />
-                        {form.errors.password && (
-                            <p className="mt-1 text-xs text-red-600">{form.errors.password}</p>
-                        )}
-                    </div>
+                    </FormField>
 
                     <div className="space-y-2">
                         <SwitchRow
@@ -471,32 +462,8 @@ export default function SharesTab({ project, accesses = [], clients = [], canMan
                             onChange={(value) => form.setData('can_favorite', value)}
                         />
                     </div>
-
-                    {Object.keys(form.errors).length > 0 && (
-                        <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-                            Certains champs sont invalides. Vérifiez le formulaire.
-                        </p>
-                    )}
-
-                    <div className="flex justify-end gap-2 pt-1">
-                        <button
-                            type="button"
-                            onClick={() => setOpen(false)}
-                            className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
-                        >
-                            Annuler
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={form.processing}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <ShareIcon className="h-4 w-4" />
-                            {form.processing ? 'Création…' : 'Créer le partage'}
-                        </button>
-                    </div>
                 </form>
-            </Dialog>
+            </FormDialog>
 
             <ConfirmDialog />
         </div>

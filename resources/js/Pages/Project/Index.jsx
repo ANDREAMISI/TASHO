@@ -5,6 +5,7 @@ import { Tag } from 'primereact/tag';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import StatsCard from '@/Components/Dashboard/StatsCard';
 import Pagination from '@/Components/Project/Pagination';
+import ProjectFormModal from '@/Components/Project/ProjectFormModal';
 import { priorityMeta, statusMeta } from '@/Components/Project/projectMeta';
 import {
     CloudIcon,
@@ -115,12 +116,27 @@ function ProjectCard({ project }) {
     );
 }
 
-export default function ProjectIndex({ auth, projects, filters, summary, team }) {
+export default function ProjectIndex({
+    auth,
+    projects,
+    filters,
+    summary,
+    team,
+    clients = [],
+    openCreate = false,
+}) {
     const [search, setSearch] = useState(filters.search || '');
+    const [createOpen, setCreateOpen] = useState(Boolean(openCreate));
 
     useEffect(() => {
         setSearch(filters.search || '');
     }, [filters.search]);
+
+    useEffect(() => {
+        if (openCreate) {
+            setCreateOpen(true);
+        }
+    }, [openCreate]);
 
     const visit = (overrides = {}) => {
         const params = {
@@ -197,13 +213,14 @@ export default function ProjectIndex({ auth, projects, filters, summary, team })
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                            href={route('projects.create')}
+                        <button
+                            type="button"
+                            onClick={() => setCreateOpen(true)}
                             className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
                         >
                             <PlusIcon className="h-4 w-4" />
                             Nouveau projet
-                        </Link>
+                        </button>
                     </div>
                 </header>
 
@@ -361,19 +378,27 @@ export default function ProjectIndex({ auth, projects, filters, summary, team })
                                 Effacer les filtres
                             </button>
                         ) : (
-                            <Link
-                                href={route('projects.create')}
+                            <button
+                                type="button"
+                                onClick={() => setCreateOpen(true)}
                                 className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90"
                             >
                                 <PlusIcon className="h-4 w-4" />
                                 Créer un projet
-                            </Link>
+                            </button>
                         )}
                     </div>
                 )}
 
                 <Pagination paginator={projects} />
             </div>
+
+            <ProjectFormModal
+                visible={createOpen}
+                onHide={() => setCreateOpen(false)}
+                clients={clients}
+                teamName={team?.name}
+            />
         </AuthenticatedLayout>
     );
 }

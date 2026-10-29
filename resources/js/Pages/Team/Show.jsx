@@ -1,28 +1,51 @@
 import { useState } from 'react';
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
+import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { Button } from 'primereact/button';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import FormDialog from '@/Components/Prime/FormDialog';
+import FormField from '@/Components/Prime/FormField';
 import {
-    UsersIcon,
     UserPlusIcon,
     UserMinusIcon,
     PencilIcon,
-    TrashIcon,
-    LinkIcon,
     CopyIcon,
     CheckIcon,
     XIcon,
-    ChevronDownIcon,
     UserGroupIcon,
     ClockIcon,
     MailIcon,
 } from '@/Components/Icons';
 
-export default function TeamShow({ auth, team, members, invitations, canManage, canInvite }) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [showInviteModal, setShowInviteModal] = useState(false);
-    const [copied, setCopied] = useState(false);
+const ROLE_OPTIONS = [
+    { value: 'manager', label: 'Manager' },
+    { value: 'editor', label: 'Éditeur' },
+    { value: 'viewer', label: 'Observateur' },
+];
 
-    const { data, setData, post, processing, errors } = useForm({
+const ROLE_LABELS = {
+    owner: 'Propriétaire',
+    manager: 'Manager',
+    editor: 'Éditeur',
+    viewer: 'Observateur',
+};
+
+const ROLE_COLORS = {
+    owner: 'bg-purple-100 text-purple-800',
+    manager: 'bg-blue-100 text-blue-800',
+    editor: 'bg-green-100 text-green-800',
+    viewer: 'bg-gray-100 text-gray-800',
+};
+
+export default function TeamShow({ auth, team, members, invitations, canManage, canInvite }) {
+    const [editOpen, setEditOpen] = useState(false);
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [copiedId, setCopiedId] = useState(null);
+
+    const { data, setData, put, processing, errors, reset, clearErrors } = useForm({
         name: team.name,
         description: team.description || '',
     });
@@ -34,130 +57,146 @@ export default function TeamShow({ auth, team, members, invitations, canManage, 
         project_access: [],
     });
 
-    const submitUpdate = (e) => {
-        e.preventDefault();
-        post(route('team.update', team.id), {
+    const closeEdit = () => {
+        if (processing) {
+            return;
+        }
+
+        setEditOpen(false);
+        reset();
+        clearErrors();
+    };
+
+    const openEdit = () => {
+        setData({
+            name: team.name,
+            description: team.description || '',
+        });
+        clearErrors();
+        setEditOpen(true);
+    };
+
+    const submitUpdate = (event) => {
+        event.preventDefault();
+
+        put(route('team.update', team.id), {
             preserveScroll: true,
-            onSuccess: () => setIsEditing(false),
+            onSuccess: () => setEditOpen(false),
         });
     };
 
-    const submitInvite = (e) => {
-        e.preventDefault();
-        post(route('team.invite', team.id), {
+    const openInvite = () => {
+        inviteForm.clearErrors();
+        setInviteOpen(true);
+    };
+
+    const closeInvite = () => {
+        if (inviteForm.processing) {
+            return;
+        }
+
+        setInviteOpen(false);
+        inviteForm.reset();
+        inviteForm.clearErrors();
+    };
+
+    const submitInvite = (event) => {
+        event.preventDefault();
+
+        inviteForm.post(route('team.invite', team.id), {
             preserveScroll: true,
             onSuccess: () => {
-                setShowInviteModal(false);
+                setInviteOpen(false);
                 inviteForm.reset();
             },
         });
     };
 
-    const removeMember = (userId) => {
-        if (confirm('Voulez-vous vraiment retirer ce membre de l\'équipe ?')) {
-            router.delete(route('team.remove-member', [team.id, userId]), {
-                preserveScroll: true,
-            });
-        }
+    const removeMember = (member) => {
+        confirmDialog({
+            message: `Voulez-vous vraiment retirer ${member.name} de l'équipe ?`,
+            header: 'Retirer le membre',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Retirer',
+            rejectLabel: 'Annuler',
+            acceptClassName: 'p-button-danger',
+            accept: () =>
+                router.delete(route('team.remove-member', [team.id, member.id]), {
+                    preserveScroll: true,
+                }),
+        });
     };
 
     const updateRole = (userId, role) => {
-        router.put(route('team.update-role', [team.id, userId]), { role }, {
-            preserveScroll: true,
+        router.put(
+            route('team.update-role', [team.id, userId]),
+            { role },
+            { preserveScroll: true },
+        );
+    };
+
+    const cancelInvitation = (invitation) => {
+        confirmDialog({
+            message: `Annuler l'invitation ${invitation.email || 'de ce lien'} ?`,
+            header: "Annuler l'invitation",
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Annuler l’invitation',
+            rejectLabel: 'Conserver',
+            acceptClassName: 'p-button-danger',
+            accept: () =>
+                router.delete(route('team.cancel-invitation', invitation.id), {
+                    preserveScroll: true,
+                }),
         });
     };
 
-    const cancelInvitation = (invitationId) => {
-        router.delete(route('team.cancel-invitation', invitationId), {
-            preserveScroll: true,
-        });
-    };
-
-    const copyInviteLink = (link) => {
+    const copyInviteLink = (link, id) => {
         navigator.clipboard.writeText(link);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    const roleLabels = {
-        owner: 'Propriétaire',
-        manager: 'Manager',
-        editor: 'Éditeur',
-        viewer: 'Observateur',
-    };
-
-    const roleColors = {
-        owner: 'bg-purple-100 text-purple-800',
-        manager: 'bg-blue-100 text-blue-800',
-        editor: 'bg-green-100 text-green-800',
-        viewer: 'bg-gray-100 text-gray-800',
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
     };
 
     return (
         <AuthenticatedLayout user={auth.user}>
             <Head title={`${team.name} - TASHO`} />
 
+            <ConfirmDialog />
+
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Header */}
                     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
                         <div className="p-6 border-b border-gray-200">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex items-center space-x-4">
                                     <div className="h-16 w-16 rounded-full bg-tasho-primary/10 flex items-center justify-center">
                                         <UserGroupIcon className="h-8 w-8 text-tasho-primary" />
                                     </div>
                                     <div>
-                                        {isEditing ? (
-                                            <form onSubmit={submitUpdate} className="flex items-center space-x-4">
-                                                <input
-                                                    type="text"
-                                                    value={data.name}
-                                                    onChange={(e) => setData('name', e.target.value)}
-                                                    className="rounded-md border-gray-300 shadow-sm focus:border-tasho-primary focus:ring-tasho-primary text-lg font-semibold"
-                                                    required
-                                                />
-                                                <button
-                                                    type="submit"
-                                                    disabled={processing}
-                                                    className="px-3 py-1 bg-tasho-primary text-white rounded-md text-sm hover:bg-tasho-primary/90"
-                                                >
-                                                    Enregistrer
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsEditing(false)}
-                                                    className="px-3 py-1 bg-gray-100 text-gray-600 rounded-md text-sm hover:bg-gray-200"
-                                                >
-                                                    Annuler
-                                                </button>
-                                            </form>
-                                        ) : (
-                                            <>
-                                                <h1 className="text-2xl font-bold text-gray-900">{team.name}</h1>
-                                                {team.description && (
-                                                    <p className="text-sm text-gray-500">{team.description}</p>
-                                                )}
-                                            </>
+                                        <h1 className="text-2xl font-bold text-gray-900">{team.name}</h1>
+                                        {team.description && (
+                                            <p className="text-sm text-gray-500">{team.description}</p>
                                         )}
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    {canManage && !isEditing && (
+                                    {canManage && (
                                         <button
-                                            onClick={() => setIsEditing(true)}
-                                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                                            title="Modifier l'équipe"
+                                            type="button"
+                                            onClick={openEdit}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
                                         >
-                                            <PencilIcon className="h-5 w-5" />
+                                            <PencilIcon className="h-4 w-4" />
+                                            Modifier
                                         </button>
                                     )}
-                                    {canManage && !isEditing && (
+                                    {(canManage || canInvite) && (
                                         <button
-                                            onClick={() => setShowInviteModal(true)}
-                                            className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md text-sm font-medium hover:bg-tasho-primary/90 transition"
+                                            type="button"
+                                            onClick={openInvite}
+                                            className="inline-flex items-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90"
                                         >
-                                            <UserPlusIcon className="h-4 w-4 mr-2" />
+                                            <UserPlusIcon className="h-4 w-4" />
                                             Inviter
                                         </button>
                                     )}
@@ -184,7 +223,7 @@ export default function TeamShow({ auth, team, members, invitations, canManage, 
                             </div>
                             <div className="p-4 text-center">
                                 <p className="text-2xl font-bold text-gray-900">
-                                    {members.filter(m => m.role === 'manager').length}
+                                    {members.filter((member) => member.role === 'manager').length}
                                 </p>
                                 <p className="text-sm text-gray-500">Managers</p>
                             </div>
@@ -198,7 +237,10 @@ export default function TeamShow({ auth, team, members, invitations, canManage, 
                         </div>
                         <div className="divide-y divide-gray-200">
                             {members.map((member) => (
-                                <div key={member.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition">
+                                <div
+                                    key={member.id}
+                                    className="p-4 flex flex-wrap items-center justify-between gap-3 hover:bg-gray-50 transition"
+                                >
                                     <div className="flex items-center space-x-4">
                                         <div className="h-10 w-10 rounded-full bg-tasho-primary/10 flex items-center justify-center flex-shrink-0">
                                             <span className="font-semibold text-tasho-primary">
@@ -210,31 +252,37 @@ export default function TeamShow({ auth, team, members, invitations, canManage, 
                                             <p className="text-sm text-gray-500">{member.email}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center space-x-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColors[member.role]}`}>
-                                            {roleLabels[member.role] || member.role}
-                                        </span>
-                                        {canManage && !team.is_owner && member.role !== 'owner' && (
-                                            <div className="relative">
-                                                <select
-                                                    value={member.role}
-                                                    onChange={(e) => updateRole(member.id, e.target.value)}
-                                                    className="text-sm border-gray-300 rounded-md focus:ring-tasho-primary focus:border-tasho-primary"
-                                                >
-                                                    <option value="manager">Manager</option>
-                                                    <option value="editor">Éditeur</option>
-                                                    <option value="viewer">Observateur</option>
-                                                </select>
-                                            </div>
+                                    <div className="flex items-center space-x-3">
+                                        {canManage && !team.is_owner && member.role !== 'owner' ? (
+                                            <Dropdown
+                                                value={member.role}
+                                                options={ROLE_OPTIONS}
+                                                onChange={(event) =>
+                                                    updateRole(member.id, event.value)
+                                                }
+                                                className="w-40"
+                                                pt={{
+                                                    root: { className: 'text-sm' },
+                                                }}
+                                            />
+                                        ) : (
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${ROLE_COLORS[member.role]}`}
+                                            >
+                                                {ROLE_LABELS[member.role] || member.role}
+                                            </span>
                                         )}
                                         {canManage && member.role !== 'owner' && (
-                                            <button
-                                                onClick={() => removeMember(member.id)}
-                                                className="text-red-400 hover:text-red-600 transition"
-                                                title="Retirer le membre"
-                                            >
-                                                <UserMinusIcon className="h-5 w-5" />
-                                            </button>
+                                            <Button
+                                                type="button"
+                                                icon="pi pi-user-minus"
+                                                rounded
+                                                text
+                                                severity="danger"
+                                                onClick={() => removeMember(member)}
+                                                tooltip="Retirer le membre"
+                                                tooltipOptions={{ position: 'left' }}
+                                            />
                                         )}
                                     </div>
                                 </div>
@@ -251,53 +299,78 @@ export default function TeamShow({ auth, team, members, invitations, canManage, 
                     {invitations.length > 0 && (
                         <div className="mt-6 bg-white shadow-sm rounded-lg overflow-hidden">
                             <div className="p-6 border-b border-gray-200">
-                                <h2 className="text-lg font-medium text-gray-900">Invitations en attente</h2>
+                                <h2 className="text-lg font-medium text-gray-900">
+                                    Invitations en attente
+                                </h2>
                             </div>
                             <div className="divide-y divide-gray-200">
                                 {invitations.map((invitation) => (
-                                    <div key={invitation.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition">
+                                    <div
+                                        key={invitation.id}
+                                        className="p-4 flex flex-wrap items-center justify-between gap-3 hover:bg-gray-50 transition"
+                                    >
                                         <div className="flex items-center space-x-4">
                                             <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
                                                 <MailIcon className="h-5 w-5 text-yellow-600" />
                                             </div>
                                             <div>
                                                 <p className="font-medium text-gray-900">
-                                                    {invitation.email || 'Lien d\'invitation'}
+                                                    {invitation.email || "Lien d'invitation"}
                                                 </p>
                                                 <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${roleColors[invitation.role]}`}>
-                                                        {roleLabels[invitation.role]}
+                                                    <span
+                                                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[invitation.role]}`}
+                                                    >
+                                                        {ROLE_LABELS[invitation.role]}
                                                     </span>
                                                     <span>•</span>
                                                     <span className="flex items-center">
                                                         <ClockIcon className="h-3 w-3 mr-1" />
-                                                        Expire le {new Date(invitation.expires_at).toLocaleDateString('fr-FR')}
+                                                        Expire le{' '}
+                                                        {new Date(
+                                                            invitation.expires_at,
+                                                        ).toLocaleDateString('fr-FR')}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
+                                        <div className="flex items-center space-x-1">
                                             {invitation.email && (
-                                                <button
-                                                    onClick={() => copyInviteLink(invitation.invite_link)}
-                                                    className="p-1 text-gray-400 hover:text-gray-600 transition"
-                                                    title="Copier le lien"
-                                                >
-                                                    {copied ? (
-                                                        <CheckIcon className="h-5 w-5 text-green-500" />
-                                                    ) : (
-                                                        <CopyIcon className="h-5 w-5" />
-                                                    )}
-                                                </button>
+                                                <Button
+                                                    type="button"
+                                                    icon={
+                                                        copiedId === invitation.id
+                                                            ? 'pi pi-check'
+                                                            : 'pi pi-copy'
+                                                    }
+                                                    rounded
+                                                    text
+                                                    severity={
+                                                        copiedId === invitation.id
+                                                            ? 'success'
+                                                            : 'secondary'
+                                                    }
+                                                    onClick={() =>
+                                                        copyInviteLink(
+                                                            invitation.invite_link,
+                                                            invitation.id,
+                                                        )
+                                                    }
+                                                    tooltip="Copier le lien"
+                                                    tooltipOptions={{ position: 'left' }}
+                                                />
                                             )}
                                             {canManage && (
-                                                <button
-                                                    onClick={() => cancelInvitation(invitation.id)}
-                                                    className="text-red-400 hover:text-red-600 transition"
-                                                    title="Annuler l'invitation"
-                                                >
-                                                    <XIcon className="h-5 w-5" />
-                                                </button>
+                                                <Button
+                                                    type="button"
+                                                    icon="pi pi-times"
+                                                    rounded
+                                                    text
+                                                    severity="danger"
+                                                    onClick={() => cancelInvitation(invitation)}
+                                                    tooltip="Annuler l'invitation"
+                                                    tooltipOptions={{ position: 'left' }}
+                                                />
                                             )}
                                         </div>
                                     </div>
@@ -308,75 +381,98 @@ export default function TeamShow({ auth, team, members, invitations, canManage, 
                 </div>
             </div>
 
-            {/* Invite Modal */}
-            {showInviteModal && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    <div className="flex items-center justify-center min-h-screen px-4">
-                        <div className="fixed inset-0 bg-black/50" onClick={() => setShowInviteModal(false)} />
-                        <div className="relative bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-medium text-gray-900">Inviter un membre</h3>
-                                <button
-                                    onClick={() => setShowInviteModal(false)}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <XIcon className="h-5 w-5" />
-                                </button>
-                            </div>
+            {/* Modale d'édition de l'équipe */}
+            <FormDialog
+                visible={editOpen}
+                onHide={closeEdit}
+                title="Modifier l'équipe"
+                description="Nom et description visibles par les membres."
+                icon="pi pi-pencil"
+                formId="team-edit-form"
+                onSubmit={submitUpdate}
+                submitLabel={processing ? 'Enregistrement…' : 'Enregistrer'}
+                processing={processing}
+                width="34rem"
+                closable={!processing}
+            >
+                <form id="team-edit-form" onSubmit={submitUpdate} className="space-y-5">
+                    <FormField
+                        label="Nom de l'équipe"
+                        htmlFor="team-edit-name"
+                        required
+                        error={errors.name}
+                    >
+                        <InputText
+                            id="team-edit-name"
+                            value={data.name}
+                            onChange={(event) => setData('name', event.target.value)}
+                            className={errors.name ? 'p-invalid' : ''}
+                            autoFocus
+                        />
+                    </FormField>
 
-                            <form onSubmit={submitInvite} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Email (optionnel)
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={inviteForm.data.email}
-                                        onChange={(e) => inviteForm.setData('email', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-tasho-primary focus:ring-tasho-primary"
-                                        placeholder="email@exemple.com"
-                                    />
-                                    {inviteForm.errors.email && (
-                                        <p className="mt-1 text-sm text-red-600">{inviteForm.errors.email}</p>
-                                    )}
-                                </div>
+                    <FormField
+                        label="Description"
+                        htmlFor="team-edit-description"
+                        error={errors.description}
+                    >
+                        <InputTextarea
+                            id="team-edit-description"
+                            value={data.description}
+                            onChange={(event) => setData('description', event.target.value)}
+                            rows={3}
+                            autoResize
+                            maxLength={500}
+                            className={errors.description ? 'p-invalid' : ''}
+                        />
+                    </FormField>
+                </form>
+            </FormDialog>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Rôle
-                                    </label>
-                                    <select
-                                        value={inviteForm.data.role}
-                                        onChange={(e) => inviteForm.setData('role', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-tasho-primary focus:ring-tasho-primary"
-                                    >
-                                        <option value="manager">Manager</option>
-                                        <option value="editor">Éditeur</option>
-                                        <option value="viewer">Observateur</option>
-                                    </select>
-                                </div>
+            {/* Modale d'invitation */}
+            <FormDialog
+                visible={inviteOpen}
+                onHide={closeInvite}
+                title="Inviter un membre"
+                description="Un lien d'invitation sera généré automatiquement."
+                icon="pi pi-user-plus"
+                formId="team-invite-form"
+                onSubmit={submitInvite}
+                submitLabel={inviteForm.processing ? 'Envoi…' : 'Envoyer l’invitation'}
+                submitIcon="pi pi-send"
+                processing={inviteForm.processing}
+                width="32rem"
+                closable={!inviteForm.processing}
+            >
+                <form id="team-invite-form" onSubmit={submitInvite} className="space-y-5">
+                    <FormField
+                        label="Email"
+                        htmlFor="invite-email"
+                        error={inviteForm.errors.email}
+                        hint="Facultatif — laissez vide pour créer un simple lien à partager."
+                    >
+                        <InputText
+                            id="invite-email"
+                            type="email"
+                            value={inviteForm.data.email}
+                            onChange={(event) => inviteForm.setData('email', event.target.value)}
+                            placeholder="email@exemple.com"
+                            className={inviteForm.errors.email ? 'p-invalid' : ''}
+                            autoFocus
+                        />
+                    </FormField>
 
-                                <div className="flex justify-end space-x-3 pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowInviteModal(false)}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                                    >
-                                        Annuler
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={inviteForm.processing}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-tasho-primary rounded-md hover:bg-tasho-primary/90 disabled:opacity-50"
-                                    >
-                                        {inviteForm.processing ? 'Envoi...' : 'Envoyer l\'invitation'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    <FormField label="Rôle" htmlFor="invite-role" error={inviteForm.errors.role}>
+                        <Dropdown
+                            inputId="invite-role"
+                            value={inviteForm.data.role}
+                            options={ROLE_OPTIONS}
+                            onChange={(event) => inviteForm.setData('role', event.value)}
+                            placeholder="Choisir un rôle"
+                        />
+                    </FormField>
+                </form>
+            </FormDialog>
         </AuthenticatedLayout>
     );
 }

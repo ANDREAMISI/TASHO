@@ -1,6 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
-
 export default function Setup({ auth }) {
     return (
         <AuthenticatedLayout user={auth.user}>
@@ -28,13 +27,13 @@ export default function Setup({ auth }) {
                         </div>
                         <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
                             <Link
-                                href="/team/create"
+                                href={route('team.index', { create: 1 })}
                                 className="inline-flex items-center justify-center px-6 py-3 bg-tasho-primary text-white rounded-lg font-medium hover:bg-tasho-primary/90"
                             >
                                 Créer une équipe
                             </Link>
                             <Link
-                                href="/projects/create"
+                                href={route('projects.index', { create: 1 })}
                                 className="inline-flex items-center justify-center px-6 py-3 border border-gray-200 rounded-lg text-gray-700 bg-white hover:bg-gray-50"
                             >
                                 Créer un projet

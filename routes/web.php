@@ -89,7 +89,6 @@ Route::middleware('auth')->group(function () {
     // ============================================================
     Route::prefix('team')->name('team.')->group(function () {
         Route::get('/', [TeamController::class, 'index'])->name('index');
-        Route::get('/create', [TeamController::class, 'create'])->name('create');
         Route::post('/', [TeamController::class, 'store'])->name('store');
         Route::get('/{team}', [TeamController::class, 'show'])->name('show');
         Route::put('/{team}', [TeamController::class, 'update'])->name('update');
@@ -110,7 +109,6 @@ Route::middleware('auth')->group(function () {
     // ============================================================
     Route::prefix('projects')->name('projects.')->group(function () {
         Route::get('/', [ProjectController::class, 'index'])->name('index');
-        Route::get('/create', [ProjectController::class, 'create'])->name('create');
         Route::post('/', [ProjectController::class, 'store'])->name('store');
         Route::get('/{project}', [ProjectController::class, 'show'])->name('show');
         Route::put('/{project}', [ProjectController::class, 'update'])->name('update');

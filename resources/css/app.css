@@ -25,3 +25,35 @@
 .app-sidebar .p-sidebar-content {
     padding: 0;
 }
+
+/* Formulaires dans les modales PrimeReact */
+.app-form-dialog .p-dialog-content {
+    padding-top: 0.5rem;
+}
+
+.app-form-dialog .p-inputtext,
+.app-form-dialog .p-inputtextarea,
+.app-form-dialog .p-dropdown,
+.app-form-dialog .p-multiselect,
+.app-form-dialog .p-calendar,
+.app-form-dialog .p-inputnumber,
+.app-form-dialog .p-password {
+    width: 100%;
+}
+
+.app-form-dialog .p-calendar .p-inputtext,
+.app-form-dialog .p-password .p-inputtext,
+.app-form-dialog .p-inputnumber .p-inputtext {
+    width: 100%;
+}
+
+.app-form-dialog .p-inputtext:enabled:focus,
+.app-form-dialog .p-inputtextarea:enabled:focus,
+.app-form-dialog .p-dropdown:not(.p-disabled).p-focus,
+.app-form-dialog .p-multiselect:not(.p-disabled).p-focus,
+.app-form-dialog .p-calendar:not(.p-disabled).p-focus > .p-inputtext,
+.app-form-dialog .p-inputnumber:not(.p-disabled).p-focus > .p-inputtext,
+.app-form-dialog .p-password:not(.p-disabled).p-focus > .p-inputtext {
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.18);
+}

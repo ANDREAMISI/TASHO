@@ -12,7 +12,7 @@ export default function GettingStarted({ projects, files, clients }) {
             title: 'Créer votre premier projet',
             description: 'Regroupez les livrables par client ou par campagne.',
             done: projects.total > 0,
-            href: route('projects.create'),
+            href: route('projects.index', { create: 1 }),
             cta: 'Créer un projet',
         },
         {
@@ -20,7 +20,7 @@ export default function GettingStarted({ projects, files, clients }) {
             title: 'Téléverser des fichiers',
             description: 'Images, vidéos ou documents : tout est centralisé.',
             done: files.total > 0,
-            href: projects.total > 0 ? route('projects.index') : route('projects.create'),
+            href: projects.total > 0 ? route('projects.index') : route('projects.index', { create: 1 }),
             cta: 'Ajouter des fichiers',
         },
         {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\BillingSummaryService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -29,11 +30,22 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'info' => fn () => $request->session()->get('info'),
+            ],
+            // Plan et stockage de l'espace client, résolus à la demande.
+            'billing' => fn () => $user && ! $user->isSuperAdmin()
+                ? app(BillingSummaryService::class)->forUser($user)
+                : null,
         ];
     }
 }

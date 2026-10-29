@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
-import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { Tag } from 'primereact/tag';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
+import FormDialog from '@/Components/Prime/FormDialog';
+import FormField from '@/Components/Prime/FormField';
 import FilePreviewDialog from './FilePreviewDialog';
 import useFilePreview from './useFilePreview';
 import {
@@ -492,22 +493,33 @@ export default function OverviewTab({
                 </SectionCard>
             </div>
 
-            <Dialog
+            <FormDialog
                 visible={addOpen}
                 onHide={() => setAddOpen(false)}
-                header="Ajouter un membre au projet"
-                style={{ width: '30rem' }}
-                breakpoints={{ '640px': '92vw' }}
-                modal
-                draggable={false}
-                resizable={false}
+                title="Ajouter un membre"
+                description="Donnez accès au projet à un membre de l'équipe."
+                icon="pi pi-user-plus"
+                formId="project-member-form"
+                onSubmit={submitMember}
+                submitLabel={memberBusy ? 'Ajout…' : 'Ajouter'}
+                submitIcon="pi pi-plus"
+                processing={memberBusy}
+                submitDisabled={!memberId}
+                width="32rem"
+                closable={!memberBusy}
             >
-                <form onSubmit={submitMember} className="space-y-4">
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Membre de l'équipe
-                        </label>
+                <form id="project-member-form" onSubmit={submitMember} className="space-y-4">
+                    <FormField
+                        label="Membre de l'équipe"
+                        htmlFor="project-member"
+                        hint={
+                            availableMembers.length === 0
+                                ? "Tous les membres de l'équipe participent déjà à ce projet."
+                                : undefined
+                        }
+                    >
                         <Dropdown
+                            inputId="project-member"
                             value={memberId}
                             options={availableMembers.map((member) => ({
                                 label: `${member.name} (${member.email})`,
@@ -517,20 +529,13 @@ export default function OverviewTab({
                             placeholder="Sélectionner un membre"
                             className="w-full"
                             filter
+                            emptyMessage="Aucun membre disponible"
                         />
+                    </FormField>
 
-                        {availableMembers.length === 0 && (
-                            <p className="mt-1 text-xs text-gray-500">
-                                Tous les membres de l'équipe participent déjà à ce projet.
-                            </p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                            Rôle sur le projet
-                        </label>
+                    <FormField label="Rôle sur le projet" htmlFor="project-member-role">
                         <Dropdown
+                            inputId="project-member-role"
                             value={memberRole}
                             options={Object.entries(MEMBER_ROLES).map(([value, label]) => ({
                                 label,
@@ -539,27 +544,9 @@ export default function OverviewTab({
                             onChange={(event) => setMemberRole(event.value)}
                             className="w-full"
                         />
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-1">
-                        <button
-                            type="button"
-                            onClick={() => setAddOpen(false)}
-                            className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
-                        >
-                            Annuler
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={memberBusy || !memberId}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <PlusIcon className="h-4 w-4" />
-                            {memberBusy ? 'Ajout…' : 'Ajouter'}
-                        </button>
-                    </div>
+                    </FormField>
                 </form>
-            </Dialog>
+            </FormDialog>
 
             <FilePreviewDialog file={previewFile} onHide={closePreview} />
             <ConfirmDialog />

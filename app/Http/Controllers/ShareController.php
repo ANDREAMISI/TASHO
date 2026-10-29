@@ -34,7 +34,7 @@ class ShareController extends Controller
         $team = $user->teams()->first();
 
         if (!$team) {
-            return redirect()->route('team.create')
+            return redirect()->route('team.index', ['create' => 1])
                 ->with('info', 'Créez une équipe pour gérer vos partages.');
         }
 

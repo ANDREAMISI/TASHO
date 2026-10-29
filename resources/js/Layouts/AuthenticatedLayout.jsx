@@ -5,6 +5,8 @@ import { Button } from 'primereact/button';
 import { Sidebar } from 'primereact/sidebar';
 import AppTopbar from '@/Components/AppTopbar';
 import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';
+import SidebarPlanCard from '@/Components/SidebarPlanCard';
+import { ToastProvider } from '@/Components/Prime/ToastProvider';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import {
     ArrowRightOnRectangleIcon,
@@ -41,7 +43,7 @@ const navigation = [
 ];
 
 export default function AuthenticatedLayout({ children, user }) {
-    const { url } = usePage();
+    const { url, props } = usePage();
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const [desktopOpen, setDesktopOpen] = useState(true);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -89,7 +91,8 @@ export default function AuthenticatedLayout({ children, user }) {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <ToastProvider>
+            <div className="min-h-screen bg-gray-50">
             <Sidebar
                 key={isDesktop ? 'desktop' : 'mobile'}
                 visible={sidebarVisible}
@@ -139,31 +142,7 @@ export default function AuthenticatedLayout({ children, user }) {
                     </nav>
 
                     {/* Plan */}
-                    <div className="shrink-0 border-t border-gray-200 p-3">
-                        <div className="rounded-lg bg-tasho-primary/10 p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-medium text-gray-500">Plan actuel</p>
-                                    <p className="text-sm font-semibold text-tasho-primary">Studio</p>
-                                </div>
-                                <div className="rounded-full bg-white/50 px-2 py-1">
-                                    <span className="text-xs font-medium text-tasho-primary">PRO</span>
-                                </div>
-                            </div>
-                            <div className="mt-3">
-                                <div className="flex justify-between text-xs text-gray-500">
-                                    <span>Stockage utilisé</span>
-                                    <span>34.2 GB / 100 GB</span>
-                                </div>
-                                <div className="mt-1 h-1.5 w-full rounded-full bg-white/50">
-                                    <div
-                                        className="h-1.5 rounded-full bg-tasho-primary"
-                                        style={{ width: '34%' }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <SidebarPlanCard billing={props.billing} />
 
                     {/* Utilisateur */}
                     <div className="shrink-0 border-t border-gray-200 p-3">
@@ -209,6 +188,7 @@ export default function AuthenticatedLayout({ children, user }) {
 
                 <main className="p-4 sm:p-6 lg:p-8">{children}</main>
             </div>
-        </div>
+            </div>
+        </ToastProvider>
     );
 }

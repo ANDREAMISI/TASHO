@@ -80,7 +80,7 @@ export default function Dashboard({ auth, stats, team }) {
                         </Link>
 
                         <Link
-                            href={route('projects.create')}
+                            href={route('projects.index', { create: 1 })}
                             className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
                         >
                             <PlusIcon className="h-4 w-4" />

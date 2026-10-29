@@ -27,7 +27,7 @@ class ClientController extends Controller
         $team = $user->teams()->first();
 
         if (!$team) {
-            return redirect()->route('team.create')
+            return redirect()->route('team.index', ['create' => 1])
                 ->with('info', 'Créez une équipe pour gérer vos clients.');
         }
 
@@ -44,6 +44,7 @@ class ClientController extends Controller
         $clients = $query->withCount(['projects', 'accesses'])
             ->orderBy('created_at', 'desc')
             ->paginate(12)
+            ->withQueryString()
             ->through(function ($client) {
                 return [
                     'id' => $client->id,
@@ -51,6 +52,7 @@ class ClientController extends Controller
                     'email' => $client->email,
                     'phone' => $client->phone,
                     'company' => $client->company,
+                    'notes' => $client->notes,
                     'avatar' => $client->avatar,
                     'projects_count' => $client->projects_count,
                     'accesses_count' => $client->accesses_count,
