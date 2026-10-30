@@ -122,21 +122,46 @@ export default function Login({ status }) {
 
                     <motion.div
                         variants={sectionVariants}
-                        className="relative bg-gradient-to-br from-[#f8fbff] via-[#f5f9ff] to-[#edf4ff] p-6 md:p-8 flex flex-col justify-between overflow-y-auto"
+                        className="relative bg-gradient-to-br from-[#f8fbff] via-[#f5f9ff] to-[#edf4ff] p-6 md:p-8 flex flex-col justify-between"
                     >
-                        {/* Logo */}
-                        <motion.div variants={itemVariants}>
-                            <img
-                                src="/Images/logo.png"
-                                alt="TASHO"
-                                className="w-24 md:w-28"
-                            />
+                        <motion.div
+                            variants={itemVariants}
+                            className="flex flex-col items-start gap-4 sm:flex-row sm:items-center md:gap-6"
+                        >
+                            <div className="flex shrink-0 flex-col items-center gap-1">
+                                <img
+                                    src="/Images/logo.png"
+                                    alt="TASHO"
+                                    className="h-24 w-24 object-contain md:h-28 md:w-28"
+                                />
+                                <span className="text-xs font-black tracking-[0.14em] text-slate-900">
+                                    TASHO
+                                </span>
+                            </div>
+                            <div>
+                                <h1 className="text-xl md:text-2xl font-extrabold leading-tight">
+                                    Vos photos méritent
+                                    <br />
+                                    un{" "}
+                                    <span className="text-blue-600">
+                                        espace sécurisé
+                                    </span>
+                                    .
+                                </h1>
+                                <p className="mt-2 text-sm text-gray-600 leading-relaxed md:text-base">
+                                    <em>
+                                        Sauvegardez, organisez et partagez vos
+                                        créations professionnelles en toute
+                                        sécurité.
+                                    </em>
+                                </p>
+                            </div>
                         </motion.div>
 
                         {/* Hero Image */}
                         <motion.div
                             variants={itemVariants}
-                            className="flex justify-center my-4 relative"
+                            className="relative my-4 flex justify-center"
                         >
                             {/* Animated Border Glow */}
                             <motion.div
@@ -160,7 +185,7 @@ export default function Login({ status }) {
                             <motion.img
                                 src="/Images/hero-logo2.png"
                                 alt="Hero"
-                                className="w-full max-h-[280px] md:max-h-[380px] object-contain mx-auto relative z-10"
+                                className="relative z-10 mx-auto w-full max-h-[240px] object-contain md:max-h-[320px]"
                                 animate={{
                                     filter: ["drop-shadow(0 0 0px rgba(59,130,246,0))", "drop-shadow(0 0 20px rgba(59,130,246,0.4))", "drop-shadow(0 0 0px rgba(59,130,246,0))"],
                                 }}
@@ -170,28 +195,6 @@ export default function Login({ status }) {
                                     repeat: Infinity,
                                 }}
                             />
-                        </motion.div>
-
-                        {/* Title */}
-                        <motion.div variants={itemVariants}>
-                            <h1 className="text-xl md:text-2xl font-extrabold leading-tight">
-                                Vos photos méritent
-                                <br />
-                                un{" "}
-                                <span className="text-blue-600">
-                                    espace sécurisé
-                                </span>
-                                .
-                            </h1>
-                        </motion.div>
-
-                        {/* Subtitle */}
-                        <motion.div variants={itemVariants}>
-                            <p className="text-sm md:text-base text-gray-600 leading-relaxed">
-                                <em>Sauvegardez, organisez et partagez vos créations
-                                    professionnelles en toute sécurité.</em>
-                            </p>
-
                         </motion.div>
 
                         {/* Glass Cards */}

@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Client;
 use App\Models\File;
 use App\Models\Project;
 use App\Models\ProjectAccess;
-use App\Models\Client;
-use App\Services\ShareService;
 use App\Services\AuditService;
+use App\Services\ShareService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class ShareController extends Controller
@@ -92,7 +93,12 @@ class ShareController extends Controller
         Gate::authorize('update', $project);
 
         $request->validate([
-            'client_id' => 'nullable|exists:clients,id',
+            'client_id' => [
+                'nullable',
+                Rule::exists('clients', 'id')->where(
+                    fn ($query) => $query->where('team_id', $project->team_id)
+                ),
+            ],
             'client_email' => 'nullable|email',
             'client_name' => 'nullable|string|max:255',
             'is_public' => 'boolean',
@@ -103,6 +109,15 @@ class ShareController extends Controller
             'max_views' => 'nullable|integer|min:1',
             'password' => 'nullable|string|min:4|max:20',
         ]);
+
+        $password = filled($request->input('password')) ? $request->input('password') : null;
+
+        // Un lien privé sans mot de passe serait inaccessible : on refuse la création.
+        if ($password === null && ! $request->boolean('is_public')) {
+            throw ValidationException::withMessages([
+                'password' => 'Définissez un mot de passe ou activez l’accès public.',
+            ]);
+        }
 
         // Si un client_id est fourni, on l'utilise
         // Sinon, on crée un client à partir des informations
@@ -131,13 +146,14 @@ class ShareController extends Controller
             $project,
             $client,
             [
-                'is_public' => $request->is_public ?? false,
-                'can_download' => $request->can_download ?? true,
-                'can_comment' => $request->can_comment ?? true,
-                'can_favorite' => $request->can_favorite ?? true,
-                'expires_in_days' => $request->expires_in_days ?? 30,
-                'max_views' => $request->max_views,
-                'password' => $request->password,
+                // Un lien protégé par mot de passe est toujours privé.
+                'is_public' => $password === null,
+                'can_download' => $request->boolean('can_download', true),
+                'can_comment' => $request->boolean('can_comment', true),
+                'can_favorite' => $request->boolean('can_favorite', true),
+                'expires_in_days' => $request->input('expires_in_days', 30),
+                'max_views' => $request->input('max_views'),
+                'password' => $password,
             ]
         );
 
@@ -171,14 +187,21 @@ class ShareController extends Controller
     {
         Gate::authorize('update', $access->project);
 
-        $request->validate([
+        $data = $request->validate([
+            'is_public' => 'boolean',
             'can_download' => 'boolean',
             'can_comment' => 'boolean',
             'can_favorite' => 'boolean',
             'expires_at' => 'nullable|date|after:now',
+            'max_views' => 'nullable|integer|min:1',
+            'password' => 'nullable|string|min:4|max:20',
         ]);
 
-        $access->update($request->all());
+        if (filled($data['password'] ?? null)) {
+            $data['is_public'] = false;
+        }
+
+        $access->update($data);
 
         return back()->with('success', 'Partage mis à jour avec succès !');
     }
@@ -188,38 +211,44 @@ class ShareController extends Controller
      */
     public function publicGallery($token)
     {
-        $access = ProjectAccess::where('access_token', $token)->firstOrFail();
+        $access = ProjectAccess::with('project:id,title,description,client_name')
+            ->where('access_token', $token)
+            ->firstOrFail();
 
-        // Vérifier si l'accès est expiré
-        if ($access->expires_at && $access->expires_at->isPast()) {
-            return Inertia::render('Gallery/Expired');
+        $project = $access->project;
+
+        // Vérifier si l'accès est expiré ou a atteint sa limite de vues.
+        if (! $access->isValid()) {
+            return Inertia::render(
+                $access->isExpired() ? 'Gallery/Expired' : 'Gallery/LimitReached',
+                ['projectTitle' => $project?->title]
+            );
         }
 
-        // Vérifier le nombre de vues
-        if ($access->max_views && $access->view_count >= $access->max_views) {
-            return Inertia::render('Gallery/LimitReached');
-        }
-
-        // Incrémenter le compteur de vues
-        $access->increment('view_count');
-        $access->update(['last_accessed_at' => now()]);
-
-        // Vérifier si un mot de passe est requis
-        if (!$access->is_public && !session('gallery_authenticated_' . $access->id)) {
+        // Vérifier si un mot de passe est requis (sans consommer de vue).
+        if ($this->requiresAuthentication($access) && ! $this->isGalleryAuthenticated($access)) {
             return Inertia::render('Gallery/Authenticate', [
-                'access' => $access,
                 'token' => $token,
+                'access' => [
+                    'id' => $access->id,
+                    'project' => ['title' => $project?->title],
+                ],
             ]);
         }
 
-        // Récupérer les fichiers du projet
-        $project = $access->project;
-        $project->load(['files' => function ($query) {
-            $query->where('is_public', true)->orWhere('is_public', false);
-        }, 'folders']);
+        // Incrémenter le compteur de vues uniquement à l'affichage réel.
+        $access->increment('view_count');
+        $access->update(['last_accessed_at' => now()]);
 
         return Inertia::render('Gallery/Show', [
-            'access' => $access,
+            // Ne jamais exposer le mot de passe ou le token complet du modèle.
+            'access' => [
+                'id' => $access->id,
+                'access_token' => $access->access_token,
+                'is_public' => $access->is_public,
+                'view_count' => $access->view_count,
+                'expires_at' => $access->expires_at?->toIso8601String(),
+            ],
             'project' => [
                 'id' => $project->id,
                 'title' => $project->title,
@@ -243,30 +272,35 @@ class ShareController extends Controller
     {
         $access = ProjectAccess::where('access_token', $token)->firstOrFail();
 
-        if ($access->is_public) {
-            session(['gallery_authenticated_' . $access->id => true]);
+        if (! $access->isValid()) {
             return redirect()->route('public.gallery', $token);
         }
 
         $request->validate([
+            'name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
             'password' => 'required|string',
         ]);
 
-        if ($request->password === $access->password) {
-            session(['gallery_authenticated_' . $access->id => true]);
-
-            // Log l'accès
-            $this->auditService->log(
-                null,
-                'authenticate',
-                $access,
-                ['visitor_name' => $request->name, 'visitor_email' => $request->email]
-            );
-
+        if (! $this->requiresAuthentication($access)) {
             return redirect()->route('public.gallery', $token);
         }
 
-        return back()->withErrors(['password' => 'Mot de passe incorrect.']);
+        if (! hash_equals((string) $access->password, (string) $request->input('password'))) {
+            return back()->withErrors(['password' => 'Mot de passe incorrect.']);
+        }
+
+        session(['gallery_authenticated_' . $access->id => true]);
+
+        // Log l'accès
+        $this->auditService->log(
+            null,
+            'authenticate',
+            $access,
+            ['visitor_name' => $request->input('name'), 'visitor_email' => $request->input('email')]
+        );
+
+        return redirect()->route('public.gallery', $token);
     }
 
     /**
@@ -276,7 +310,9 @@ class ShareController extends Controller
     {
         $access = ProjectAccess::where('access_token', $token)->firstOrFail();
 
-        if (!$access->can_comment) {
+        $this->ensureGalleryAccess($access);
+
+        if (! $access->can_comment) {
             return response()->json(['error' => 'Les commentaires sont désactivés.'], 403);
         }
 
@@ -284,7 +320,12 @@ class ShareController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'content' => 'required|string|max:1000',
-            'file_id' => 'nullable|exists:files,id',
+            'file_id' => [
+                'nullable',
+                Rule::exists('files', 'id')->where(
+                    fn ($query) => $query->where('project_id', $access->project_id)
+                ),
+            ],
         ]);
 
         $comment = $access->project->comments()->create([
@@ -316,7 +357,9 @@ class ShareController extends Controller
     {
         $access = ProjectAccess::where('access_token', $token)->firstOrFail();
 
-        if (!$access->can_favorite) {
+        $this->ensureGalleryAccess($access);
+
+        if (! $access->can_favorite) {
             return response()->json(['error' => 'Les favoris sont désactivés.'], 403);
         }
 
@@ -332,6 +375,18 @@ class ShareController extends Controller
             return response()->json(['error' => 'Fichier introuvable.'], 404);
         }
 
+        // Un même visiteur ne peut avoir qu'un favori par fichier :
+        // un second clic retire le favori existant.
+        $existing = $file->favorites()
+            ->where('visitor_email', $request->email)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+
+            return response()->json(['success' => true, 'favorited' => false]);
+        }
+
         $favorite = $file->favorites()->create([
             'visitor_email' => $request->email,
             'metadata' => [
@@ -340,7 +395,11 @@ class ShareController extends Controller
             ],
         ]);
 
-        return response()->json(['success' => true, 'favorite' => $favorite]);
+        return response()->json([
+            'success' => true,
+            'favorited' => true,
+            'favorite' => $favorite,
+        ]);
     }
 
     /**
@@ -349,6 +408,8 @@ class ShareController extends Controller
     public function getComments($token)
     {
         $access = ProjectAccess::where('access_token', $token)->firstOrFail();
+
+        $this->ensureGalleryAccess($access);
 
         $comments = $access->project->comments()
             ->with('file')
@@ -379,16 +440,13 @@ class ShareController extends Controller
             abort(404);
         }
 
-        if (!$access->isValid()) {
-            abort(403, 'Accès à la galerie expiré ou limité.');
-        }
+        $this->ensureGalleryAccess($access);
 
-        if (!$access->is_public && !session('gallery_authenticated_' . $access->id)) {
-            return redirect()->route('public.gallery', $token);
+        // Les vignettes de la grille ne doivent pas gonfler le compteur de vues.
+        if (! $request->boolean('thumb')) {
+            $file->increment('view_count');
+            $file->update(['last_accessed_at' => now()]);
         }
-
-        $file->increment('view_count');
-        $file->update(['last_accessed_at' => now()]);
 
         if ($file->isImage() || $file->isVideo()) {
             return Storage::disk($file->disk)->response($file->path, $file->original_name);
@@ -412,15 +470,9 @@ class ShareController extends Controller
             abort(404);
         }
 
-        if (!$access->isValid()) {
-            abort(403, 'Accès à la galerie expiré ou limité.');
-        }
+        $this->ensureGalleryAccess($access);
 
-        if (!$access->is_public && !session('gallery_authenticated_' . $access->id)) {
-            return redirect()->route('public.gallery', $token);
-        }
-
-        if (!$access->can_download) {
+        if (! $access->can_download) {
             abort(403, 'Le téléchargement est désactivé pour cette galerie.');
         }
 
@@ -428,5 +480,35 @@ class ShareController extends Controller
         $file->update(['last_accessed_at' => now()]);
 
         return Storage::disk($file->disk)->download($file->path, $file->original_name);
+    }
+
+    /**
+     * Un accès nécessite une authentification dès qu'un mot de passe est défini.
+     */
+    private function requiresAuthentication(ProjectAccess $access): bool
+    {
+        return filled($access->password);
+    }
+
+    /**
+     * Indique si le visiteur a déjà validé le mot de passe de cette galerie.
+     */
+    private function isGalleryAuthenticated(ProjectAccess $access): bool
+    {
+        return (bool) session('gallery_authenticated_' . $access->id);
+    }
+
+    /**
+     * Vérifie qu'un accès est valide et authentifié pour les actions publiques.
+     */
+    private function ensureGalleryAccess(ProjectAccess $access): void
+    {
+        if (! $access->isValid()) {
+            abort(403, 'Cet accès a expiré ou a atteint sa limite de vues.');
+        }
+
+        if ($this->requiresAuthentication($access) && ! $this->isGalleryAuthenticated($access)) {
+            abort(403, 'Authentification requise pour accéder à cette galerie.');
+        }
     }
 }

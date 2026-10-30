@@ -24,6 +24,18 @@
             padding: 32px 40px;
             text-align: center;
         }
+        .header .logo {
+            display: inline-block;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+        }
+        .header .logo img {
+            display: block;
+            width: 110px;
+            height: auto;
+        }
         .header h1 {
             color: white;
             font-size: 28px;
@@ -84,6 +96,9 @@
 <body>
     <div class="container">
         <div class="header">
+            <div class="logo">
+                <img src="{{ asset('Images/logo.png') }}" alt="TASHO">
+            </div>
             <h1>TASHO</h1>
             <p>Plateforme pour professionnels des médias</p>
         </div>

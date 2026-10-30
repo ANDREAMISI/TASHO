@@ -74,12 +74,18 @@ export default function Register({ professions, workTypes, storageVolumes }) {
                         className="relative bg-gradient-to-br from-[#fff] via-[#fff] to-[#fff] p-6 md:p-8 flex flex-col justify-between gap-1 overflow-y-auto"
                     >
                         {/* Logo */}
-                        <motion.div variants={itemVariants}>
+                        <motion.div
+                            variants={itemVariants}
+                            className="flex items-center gap-3"
+                        >
                             <img
                                 src="/Images/logo.png"
                                 alt="TASHO"
-                                className="w-24 md:w-28"
+                                className="h-24 w-24 shrink-0 object-contain md:h-28 md:w-28"
                             />
+                            <span className="text-2xl font-black tracking-[0.14em] text-slate-900">
+                                TASHO
+                            </span>
                         </motion.div>
 
                         {/* Hero Image */}

@@ -108,9 +108,11 @@ export default function AuthenticatedLayout({ children, user }) {
                 <div className="flex h-full flex-col bg-white">
                     {/* Logo */}
                     <div className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-200 px-4">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tasho-primary text-sm font-bold text-white">
-                            T
-                        </div>
+                        <img
+                            src="/Images/logo.png"
+                            alt="TASHO"
+                            className="h-10 w-10 shrink-0 object-contain"
+                        />
                         <div className="min-w-0 flex-1">
                             <p className="text-base font-bold leading-tight text-gray-900">TASHO</p>
                             <p className="text-[11px] font-semibold uppercase tracking-wider text-tasho-primary">

@@ -432,7 +432,7 @@ export default function ShareIndex({ auth, projects, selectedProject, accesses =
                         label="Mot de passe"
                         htmlFor="share-password"
                         error={errors.password}
-                        hint="Optionnel — 4 caractères minimum si renseigné."
+                        hint="Optionnel — 4 caractères min., requis si l’accès public est désactivé."
                     >
                         <Password
                             inputId="share-password"

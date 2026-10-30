@@ -61,10 +61,12 @@ export default function Welcome({ canLogin, canRegister }) {
                     <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,16,31,0.95),rgba(3,16,31,0.75))]" />
                     <div className="relative mx-auto flex h-20 max-w-[1280px] items-center justify-between px-6 lg:px-10">
                         
-                        <div className="flex items-center gap-1.5">
-                            <img src="/Images/logo.png" alt="Tasho logo" className="h-9 w-auto object-contain" />
+                        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+                            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-lg shadow-black/25">
+                                <img src="/Images/logo.png" alt="Tasho logo" className="h-full w-full object-contain" />
+                            </span>
                             <span className="text-lg font-black tracking-[0.08em] text-white">TASHO</span>
-                        </div>
+                        </Link>
 
                         <div className="hidden items-center gap-8 text-sm font-medium text-slate-200 md:flex">
                             <Link href="#" className="transition hover:text-white">Accueil</Link>
@@ -428,7 +430,9 @@ export default function Welcome({ canLogin, canRegister }) {
                         <div className="grid gap-10 border-b border-white/10 pb-10 md:grid-cols-2 lg:grid-cols-5">
                             <div className="lg:col-span-2">
                                 <div className="mb-6 flex items-center gap-3">
-                                    <img src="/Images/logo.png" alt="Tasho logo" className="h-10 w-10 rounded-full object-cover ring-1 ring-white/15" />
+                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-white p-2 shadow-lg shadow-black/25">
+                                        <img src="/Images/logo.png" alt="Tasho logo" className="h-full w-full object-contain" />
+                                    </span>
                                     <span className="text-[28px] font-black tracking-[-0.08em]">TASHO</span>
                                 </div>
                                 <p className="max-w-xs text-sm leading-6 text-slate-300">

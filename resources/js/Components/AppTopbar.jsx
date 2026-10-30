@@ -34,6 +34,11 @@ export default function AppTopbar({
                 aria-label="Afficher ou masquer le menu"
                 className="!h-9 !w-9 !shrink-0 !p-0 !text-gray-600 hover:!bg-gray-100"
             />
+            <img
+                src="/Images/logo.png"
+                alt="TASHO"
+                className="h-8 w-8 shrink-0 object-contain"
+            />
             <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-gray-900">{title}</p>
                 <p className="hidden truncate text-xs text-gray-500 sm:block">{subtitle}</p>

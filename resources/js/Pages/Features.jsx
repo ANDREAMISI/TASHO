@@ -93,6 +93,10 @@ export default function Features() {
             {/* Hero */}
             <section className="bg-gradient-to-br from-tasho-dark to-tasho-primary/20 py-20">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <span className="mb-6 inline-flex items-center gap-3 rounded-2xl bg-white px-4 py-2 shadow-lg shadow-black/20">
+                        <img src="/Images/logo.png" alt="TASHO" className="h-12 w-12 object-contain" />
+                        <span className="text-xl font-black tracking-[0.14em] text-slate-900">TASHO</span>
+                    </span>
                     <h1 className="text-4xl sm:text-5xl font-bold text-white">
                         Toutes les fonctionnalités
                         <br />

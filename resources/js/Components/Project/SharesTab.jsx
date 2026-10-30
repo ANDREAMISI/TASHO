@@ -79,7 +79,7 @@ export default function SharesTab({ project, accesses = [], clients = [], canMan
         client_id: '',
         client_name: '',
         client_email: '',
-        is_public: false,
+        is_public: true,
         can_download: true,
         can_comment: true,
         can_favorite: true,
@@ -423,7 +423,7 @@ export default function SharesTab({ project, accesses = [], clients = [], canMan
                         label="Mot de passe"
                         htmlFor="project-share-password"
                         error={form.errors.password}
-                        hint="Optionnel — laissez vide pour un accès direct."
+                        hint="Optionnel pour un lien public — 4 caractères min., requis si l’accès est privé."
                     >
                         <Password
                             inputId="project-share-password"
