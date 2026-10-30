@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { InputText } from 'primereact/inputtext';
-import { Button } from 'primereact/button';
+import Button from '@/Components/Button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Pagination from '@/Components/Project/Pagination';

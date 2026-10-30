@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { Avatar } from 'primereact/avatar';
-import { Button } from 'primereact/button';
+import Button from '@/Components/Button';
 import { Sidebar } from 'primereact/sidebar';
 import AppTopbar from '@/Components/AppTopbar';
 import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';

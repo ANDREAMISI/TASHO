@@ -4,7 +4,7 @@ import InputLabel from "@/Components/InputLabel";
 import TextInput from "@/Components/TextInput";
 import InputError from "@/Components/InputError";
 import SelectInput from "@/Components/SelectInput";
-import PrimaryButton from "@/Components/PrimaryButton";
+import Button from "@/Components/Button";
 import { FaUser } from "react-icons/fa";
 import { FaBriefcase } from "react-icons/fa";
 import { FaCloud, FaImages, FaLock } from "react-icons/fa";
@@ -437,7 +437,8 @@ export default function Register({ professions, workTypes, storageVolumes }) {
                                         ease: "easeInOut",
                                     }}
                                 >
-                                    <PrimaryButton
+                                    <Button
+                                        type="submit"
                                         disabled={processing}
                                         className="w-full h-14 justify-center rounded-xl bg-gradient-to-r from-[#2563eb] to-[#38bdf8] text-base md:text-lg font-semibold transition duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(59,130,246,0.35)]"
                                     >
@@ -449,7 +450,7 @@ export default function Register({ professions, workTypes, storageVolumes }) {
                                         ) : (
                                             "S'inscrire"
                                         )}
-                                    </PrimaryButton>
+                                    </Button>
                                 </motion.div>
 
                                 {/* LOGIN */}

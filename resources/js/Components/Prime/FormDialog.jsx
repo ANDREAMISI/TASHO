@@ -1,5 +1,5 @@
 import { Dialog } from 'primereact/dialog';
-import { Button } from 'primereact/button';
+import Button from '@/Components/Button';
 
 /**
  * Modale de formulaire harmonisée (PrimeReact Dialog).

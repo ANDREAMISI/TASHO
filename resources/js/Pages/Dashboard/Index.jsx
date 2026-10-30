@@ -1,5 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Button from '@/Components/Button';
 import ActivityChart from '@/Components/Dashboard/ActivityChart';
 import ActivityFeed from '@/Components/Dashboard/ActivityFeed';
 import GettingStarted from '@/Components/Dashboard/GettingStarted';
@@ -72,20 +73,17 @@ export default function Dashboard({ auth, stats, team }) {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                            href={route('projects.index')}
-                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
-                        >
+                        <Button href={route('projects.index')} variant="secondary">
                             Voir les projets
-                        </Link>
+                        </Button>
 
-                        <Link
+                        <Button
                             href={route('projects.index', { create: 1 })}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
+                            variant="primary"
                         >
                             <PlusIcon className="h-4 w-4" />
                             Nouveau projet
-                        </Link>
+                        </Button>
                     </div>
                 </header>
 

@@ -1,5 +1,10 @@
 @layer tailwind-base, primereact, tailwind-utilities;
 
+/* Rayon commun des boutons et des champs de formulaire. */
+:root {
+    --tasho-radius: 5px;
+}
+
 @layer tailwind-base {
     @tailwind base;
 }
@@ -56,4 +61,69 @@
 .app-form-dialog .p-password:not(.p-disabled).p-focus > .p-inputtext {
     border-color: #6c5ce7;
     box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.18);
+}
+
+/*
+ * Rayon 5px sur tous les boutons et champs.
+ * Les boutons volontairement circulaires (rounded-full / p-button-rounded)
+ * conservent leur forme.
+ */
+button:not(.rounded-full):not(.p-button-rounded),
+.p-button:not(.p-button-rounded) {
+    border-radius: var(--tasho-radius) !important;
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+select,
+textarea,
+.p-inputtext,
+.p-inputtextarea,
+.p-dropdown,
+.p-multiselect,
+.p-calendar,
+.p-password,
+.p-inputnumber,
+.p-autocomplete,
+.p-chips,
+.p-tree-select {
+    border-radius: var(--tasho-radius) !important;
+}
+
+/* Aligne les éléments internes des champs PrimeReact sur le rayon du conteneur. */
+.p-dropdown .p-dropdown-label,
+.p-multiselect .p-multiselect-label,
+.p-chips .p-chips-multiple-container {
+    border-radius: inherit;
+}
+
+/*
+ * Rayon 5px sur les conteneurs (cartes, panneaux, modales…).
+ * Les éléments volontairement circulaires, sans arrondi ou arrondis d'un seul
+ * côté conservent leur forme.
+ */
+[class*='rounded-']:not([class*='rounded-full']):not([class*='rounded-none']):not([class*='rounded-t-']):not([class*='rounded-b-']):not([class*='rounded-l-']):not([class*='rounded-r-']),
+.p-dialog,
+.p-overlaypanel,
+.p-confirm-dialog,
+.p-card,
+.p-panel,
+.p-sidebar:not(.app-sidebar),
+.p-datatable,
+.p-menu,
+.p-dropdown-panel,
+.p-multiselect-panel,
+.p-datepicker,
+.p-toast-message {
+    border-radius: var(--tasho-radius) !important;
+}
+
+/* Les en-têtes et pieds de modale suivent le rayon du conteneur. */
+.p-dialog .p-dialog-header {
+    border-top-left-radius: var(--tasho-radius) !important;
+    border-top-right-radius: var(--tasho-radius) !important;
+}
+
+.p-dialog .p-dialog-footer {
+    border-bottom-left-radius: var(--tasho-radius) !important;
+    border-bottom-right-radius: var(--tasho-radius) !important;
 }

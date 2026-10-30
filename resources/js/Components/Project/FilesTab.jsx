@@ -4,7 +4,7 @@ import { router } from '@inertiajs/react';
 import { Dialog } from 'primereact/dialog';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
-import { Button } from 'primereact/button';
+import Button from '@/Components/Button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import FilePreviewDialog from './FilePreviewDialog';
 import Pagination from './Pagination';

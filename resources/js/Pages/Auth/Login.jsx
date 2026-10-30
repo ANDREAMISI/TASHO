@@ -1,6 +1,6 @@
 import Checkbox from "@/Components/Checkbox";
 import InputError from "@/Components/InputError";
-import PrimaryButton from "@/Components/PrimaryButton";
+import Button from "@/Components/Button";
 import TextInput from "@/Components/TextInput";
 import { Head, Link, useForm } from "@inertiajs/react";
 import {
@@ -392,7 +392,8 @@ export default function Login({ status }) {
                                         ease: "easeInOut",
                                     }}
                                 >
-                                    <PrimaryButton
+                                    <Button
+                                        type="submit"
                                         disabled={processing}
                                         className="w-full h-14 justify-center rounded-xl bg-gradient-to-r from-[#2563eb] to-[#38bdf8] text-base md:text-lg font-semibold transition duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(59,130,246,0.35)]"
                                     >
@@ -404,7 +405,7 @@ export default function Login({ status }) {
                                         ) : (
                                             "Connexion"
                                         )}
-                                    </PrimaryButton>
+                                    </Button>
                                 </motion.div>
 
                                 {/* REGISTER */}
