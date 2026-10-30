@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { 
     UserGroupIcon, 
@@ -12,6 +12,8 @@ import {
 } from '@/Components/Icons';
 
 export default function InvitationShow({ invitation, user, hasAccount }) {
+    const { errors } = usePage().props;
+
     const { data, setData, post, processing } = useForm({
         accept: true,
     });
@@ -61,6 +63,12 @@ export default function InvitationShow({ invitation, user, hasAccount }) {
 
                     {/* Invitation Card */}
                     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+                        {(errors?.message || (hasAccount && invitation.email && user && invitation.email.toLowerCase() !== user.email.toLowerCase())) && (
+                            <div className="border-b border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
+                                {errors?.message ||
+                                    `Cette invitation a été envoyée à ${invitation.email}. Connectez-vous avec cette adresse pour l’accepter.`}
+                            </div>
+                        )}
                         <div className="p-6 space-y-4">
                             {/* Invited By */}
                             <div className="flex items-center space-x-3">

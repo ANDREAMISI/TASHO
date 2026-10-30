@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Team extends Model
@@ -33,7 +33,7 @@ class Team extends Model
 
         static::creating(function ($team) {
             if (empty($team->slug)) {
-                $team->slug = Str::slug($team->name) . '-' . Str::random(6);
+                $team->slug = Str::slug($team->name).'-'.Str::random(6);
             }
         });
     }
@@ -47,13 +47,13 @@ class Team extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'team_members')
-                    ->withPivot('role', 'permissions', 'joined_at', 'last_activity_at')
-                    ->withTimestamps()
-                    ->withCasts([
-                        'permissions' => 'array',
-                        'joined_at' => 'datetime',
-                        'last_activity_at' => 'datetime',
-                    ]);
+            ->withPivot('role', 'permissions', 'joined_at', 'last_activity_at')
+            ->withTimestamps()
+            ->withCasts([
+                'permissions' => 'array',
+                'joined_at' => 'datetime',
+                'last_activity_at' => 'datetime',
+            ]);
     }
 
     public function invitations(): HasMany
@@ -79,7 +79,7 @@ class Team extends Model
     // Vérifications
     public function isOwner(User $user): bool
     {
-        return $this->owner_id === $user->id;
+        return (int) $this->owner_id === (int) $user->id;
     }
 
     public function hasMember(User $user): bool
@@ -90,6 +90,7 @@ class Team extends Model
     public function getMemberRole(User $user): ?string
     {
         $member = $this->members()->where('user_id', $user->id)->first();
+
         return $member ? $member->pivot->role : null;
     }
 }

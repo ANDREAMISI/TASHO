@@ -4,13 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\TeamInvitation;
-use App\Models\TeamMember;
 use App\Models\User;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class TeamController extends Controller
@@ -27,9 +25,17 @@ class TeamController extends Controller
      */
     public function index(Request $request)
     {
-        $user = auth()->user();
-        $teams = $user->teams()->with('owner')->get();
-        $currentTeam = $user->teams()->first();
+        $user = $request->user();
+
+        $teams = Team::query()
+            ->where('owner_id', $user->id)
+            ->orWhereHas('members', fn ($query) => $query->where('users.id', $user->id))
+            ->with('owner')
+            ->withCount('members')
+            ->orderBy('name')
+            ->get();
+
+        $currentTeam = $teams->firstWhere('owner_id', $user->id) ?? $teams->first();
 
         return Inertia::render('Team/Index', [
             'teams' => $teams,
@@ -48,7 +54,7 @@ class TeamController extends Controller
             'description' => 'nullable|string|max:500',
         ]);
 
-        $user = auth()->user();
+        $user = $request->user();
         $team = $this->teamService->createTeam($user, $request->name, $request->description);
 
         return redirect()->route('team.show', $team)
@@ -58,26 +64,44 @@ class TeamController extends Controller
     /**
      * Afficher une équipe
      */
-    public function show(Team $team)
+    public function show(Request $request, Team $team)
     {
         Gate::authorize('view', $team);
 
+        $user = $request->user();
+
         $team->load(['owner', 'members', 'invitations' => function ($query) {
-            $query->where('status', 'pending');
+            $query->where('status', 'pending')->where('expires_at', '>', now());
         }]);
 
-        $members = $team->members->map(function ($member) {
-            return [
-                'id' => $member->id,
-                'name' => $member->name,
-                'email' => $member->email,
-                'avatar' => $member->avatar,
-                'role' => $member->pivot->role,
-                'joined_at' => $member->pivot->joined_at,
-                'last_activity_at' => $member->pivot->last_activity_at,
-                'permissions' => $member->pivot->permissions,
-            ];
-        });
+        $members = $team->members
+            ->sortBy(fn ($member) => $member->id === $team->owner_id ? 0 : 1)
+            ->values()
+            ->map(function ($member) use ($team, $user) {
+                $canManage = Gate::allows('manageMembers', $team);
+                $isActorOwner = $team->isOwner($user) || $user->isSuperAdmin();
+                $isSelf = $member->id === $user->id;
+
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'email' => $member->email,
+                    'avatar' => $member->avatar,
+                    'role' => $member->pivot->role,
+                    'joined_at' => $member->pivot->joined_at,
+                    'last_activity_at' => $member->pivot->last_activity_at,
+                    'permissions' => $member->pivot->permissions,
+                    // Un manager ne peut pas modifier un autre manager ni promouvoir quelqu'un.
+                    'can_change_role' => $canManage
+                        && $member->pivot->role !== 'owner'
+                        && ! $isSelf
+                        && ($isActorOwner || $member->pivot->role !== 'manager'),
+                    'can_remove' => $canManage
+                        && $member->pivot->role !== 'owner'
+                        && ! $isSelf
+                        && ($isActorOwner || $member->pivot->role !== 'manager'),
+                ];
+            });
 
         $pendingInvitations = $team->invitations->map(function ($invitation) {
             return [
@@ -87,12 +111,12 @@ class TeamController extends Controller
                 'token' => $invitation->token,
                 'expires_at' => $invitation->expires_at,
                 'created_at' => $invitation->created_at,
-                'invite_link' => route('team.accept-invitation', $invitation->token),
+                'invite_link' => route('invitation.show', $invitation->token),
             ];
         });
 
-        $canManage = Gate::allows('manageMembers', $team);
-        $canInvite = Gate::allows('invite-team-member', $team);
+        $isOwner = $team->isOwner($user);
+        $isSuperAdmin = $user->isSuperAdmin();
 
         return Inertia::render('Team/Show', [
             'team' => [
@@ -102,12 +126,16 @@ class TeamController extends Controller
                 'description' => $team->description,
                 'logo' => $team->logo,
                 'owner' => $team->owner,
-                'is_owner' => $team->owner_id === auth()->id(),
+                'is_owner' => $isOwner,
+                'is_super_admin' => $isSuperAdmin,
+                'current_role' => $team->getMemberRole($user),
+                // Seul le propriétaire (ou un super admin) peut nommer des managers.
+                'can_assign_manager' => $isOwner || $isSuperAdmin,
             ],
             'members' => $members,
             'invitations' => $pendingInvitations,
-            'canManage' => $canManage,
-            'canInvite' => $canInvite,
+            'canManage' => Gate::allows('manageMembers', $team),
+            'canInvite' => Gate::allows('invite-team-member', $team),
         ]);
     }
 
@@ -153,81 +181,67 @@ class TeamController extends Controller
 
         $request->validate([
             'email' => 'nullable|email|max:255',
-            'role' => 'required|in:manager,editor,viewer',
+            'role' => ['required', Rule::in(['manager', 'editor', 'viewer'])],
             'permissions' => 'nullable|array',
             'project_access' => 'nullable|array',
         ]);
 
-        // Vérifier si l'utilisateur existe déjà
-        $existingUser = User::where('email', $request->email)->first();
+        $user = $request->user();
+        $email = $request->filled('email') ? mb_strtolower(trim($request->email)) : null;
 
-        if ($existingUser && $team->members()->where('user_id', $existingUser->id)->exists()) {
+        if ($request->role === 'manager' && ! $this->canAssignManager($team, $user)) {
             return back()->withErrors([
-                'email' => 'Cet utilisateur est déjà membre de l\'équipe.'
+                'role' => 'Seul le propriétaire de l’équipe peut inviter un manager.',
             ]);
+        }
+
+        if ($email) {
+            $existingUser = User::where('email', $email)->first();
+
+            if ($existingUser && $team->members()->where('user_id', $existingUser->id)->exists()) {
+                return back()->withErrors([
+                    'email' => 'Cet utilisateur est déjà membre de l’équipe.',
+                ]);
+            }
+
+            $alreadyInvited = $team->invitations()
+                ->where('email', $email)
+                ->where('status', 'pending')
+                ->where('expires_at', '>', now())
+                ->exists();
+
+            if ($alreadyInvited) {
+                return back()->withErrors([
+                    'email' => 'Une invitation est déjà en attente pour cet email.',
+                ]);
+            }
         }
 
         $invitation = $this->teamService->createInvitation(
             $team,
-            auth()->user(),
-            $request->email,
+            $user,
+            $email,
             $request->role,
             $request->permissions ?? [],
             $request->project_access ?? []
         );
 
         // Envoyer l'email d'invitation
-        if ($request->email) {
+        if ($email) {
             $this->teamService->sendInvitationEmail($invitation);
         }
 
-        return back()->with('success', 'Invitation créée avec succès !');
+        return back()
+            ->with('success', 'Invitation créée avec succès !')
+            ->with('invite_link', route('invitation.show', $invitation->token));
     }
 
     /**
-     * Accepter une invitation
+     * Ancien point d'entrée des invitations (conservé pour les emails déjà envoyés).
      */
     public function acceptInvitation($token)
     {
-        $invitation = TeamInvitation::where('token', $token)
-            ->where('status', 'pending')
-            ->firstOrFail();
-
-        if ($invitation->isExpired()) {
-            $invitation->update(['status' => 'expired']);
-            
-            return Inertia::render('Team/InvitationExpired', [
-                'invitation' => $invitation,
-            ]);
-        }
-
-        $user = auth()->user();
-
-        // Si l'utilisateur n'est pas connecté
-        if (!$user) {
-            session(['invitation_token' => $token]);
-            return redirect()->route('login');
-        }
-
-        // Vérifier si l'invitation correspond à l'email de l'utilisateur
-        if ($invitation->email && $invitation->email !== $user->email) {
-            return Inertia::render('Team/InvitationError', [
-                'message' => 'Cette invitation ne correspond pas à votre email.',
-            ]);
-        }
-
-        // Vérifier si l'utilisateur est déjà membre
-        if ($invitation->team->members()->where('user_id', $user->id)->exists()) {
-            return Inertia::render('Team/InvitationError', [
-                'message' => 'Vous êtes déjà membre de cette équipe.',
-            ]);
-        }
-
-        // Accepter l'invitation
-        $this->teamService->acceptInvitation($invitation, $user);
-
-        return redirect()->route('team.show', $invitation->team)
-            ->with('success', 'Vous avez rejoint l\'équipe avec succès !');
+        return redirect()->route('invitation.show', $token);
     }
 
     /**
@@ -249,10 +263,25 @@ class TeamController extends Controller
     {
         Gate::authorize('manageMembers', $team);
 
-        // Empêcher la suppression du propriétaire
-        if ($team->owner_id === $user->id) {
+        abort_unless($team->hasMember($user), 404);
+
+        if ($team->isOwner($user)) {
             return back()->withErrors([
-                'message' => 'Vous ne pouvez pas retirer le propriétaire de l\'équipe.'
+                'message' => 'Vous ne pouvez pas retirer le propriétaire de l’équipe.',
+            ]);
+        }
+
+        if ($user->id === $request->user()->id) {
+            return back()->withErrors([
+                'message' => 'Vous ne pouvez pas vous retirer vous-même de l’équipe.',
+            ]);
+        }
+
+        $targetRole = $team->getMemberRole($user);
+
+        if (! $this->canAssignManager($team, $request->user()) && $targetRole === 'manager') {
+            return back()->withErrors([
+                'message' => 'Seul le propriétaire peut retirer un manager.',
             ]);
         }
 
@@ -269,13 +298,35 @@ class TeamController extends Controller
         Gate::authorize('manageMembers', $team);
 
         $request->validate([
-            'role' => 'required|in:manager,editor,viewer',
+            'role' => ['required', Rule::in(['manager', 'editor', 'viewer'])],
         ]);
 
-        // Empêcher la modification du rôle du propriétaire
-        if ($team->owner_id === $user->id) {
+        abort_unless($team->hasMember($user), 404);
+
+        if ($team->isOwner($user)) {
             return back()->withErrors([
-                'message' => 'Vous ne pouvez pas modifier le rôle du propriétaire.'
+                'message' => 'Vous ne pouvez pas modifier le rôle du propriétaire.',
+            ]);
+        }
+
+        if ($user->id === $request->user()->id) {
+            return back()->withErrors([
+                'message' => 'Vous ne pouvez pas modifier votre propre rôle.',
+            ]);
+        }
+
+        $canAssignManager = $this->canAssignManager($team, $request->user());
+        $targetRole = $team->getMemberRole($user);
+
+        if (! $canAssignManager && $targetRole === 'manager') {
+            return back()->withErrors([
+                'message' => 'Seul le propriétaire peut modifier le rôle d’un manager.',
+            ]);
+        }
+
+        if (! $canAssignManager && $request->role === 'manager') {
+            return back()->withErrors([
+                'role' => 'Seul le propriétaire peut nommer un manager.',
             ]);
         }
 
@@ -287,28 +338,10 @@ class TeamController extends Controller
     }
 
     /**
-     * Générer un lien d'invitation
+     * Le propriétaire (ou un super admin) peut nommer et gérer les managers.
      */
-    public function generateInviteLink(Request $request, Team $team)
+    private function canAssignManager(Team $team, User $user): bool
     {
-        Gate::authorize('invite-team-member', $team);
-
-        $request->validate([
-            'role' => 'required|in:manager,editor,viewer',
-        ]);
-
-        $invitation = $this->teamService->createInvitation(
-            $team,
-            auth()->user(),
-            null, // Pas d'email (lien public)
-            $request->role,
-            [],
-            []
-        );
-
-        return response()->json([
-            'link' => route('team.accept-invitation', $invitation->token),
-            'token' => $invitation->token,
-        ]);
+        return $team->isOwner($user) || $user->isSuperAdmin();
     }
 }

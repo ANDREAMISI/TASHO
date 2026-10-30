@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Team;
 use App\Models\TeamInvitation;
-use App\Models\User;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class InvitationController extends Controller
@@ -23,26 +25,41 @@ class InvitationController extends Controller
      */
     public function show($token)
     {
-        $invitation = TeamInvitation::where('token', $token)
-            ->where('status', 'pending')
-            ->first();
+        $invitation = TeamInvitation::where('token', $token)->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return Inertia::render('Invitation/Invalid', [
                 'message' => 'Cette invitation n\'existe pas ou a déjà été utilisée.',
             ]);
         }
 
-        if ($invitation->isExpired()) {
-            $invitation->update(['status' => 'expired']);
-            
+        if ($invitation->isExpired() || $invitation->status === 'expired') {
+            if ($invitation->status === 'pending') {
+                $invitation->update(['status' => 'expired']);
+            }
+
             return Inertia::render('Invitation/Expired', [
                 'invitation' => $invitation,
             ]);
         }
 
+        if ($invitation->status !== 'pending') {
+            return Inertia::render('Invitation/Invalid', [
+                'message' => 'Cette invitation a déjà été utilisée ou annulée.',
+            ]);
+        }
+
         $invitation->load(['team', 'invitedBy']);
         $user = Auth::user();
+
+        // Mémoriser le jeton pour que l'utilisateur le retrouve après
+        // connexion ou inscription.
+        if (! $user) {
+            session(['invitation_token' => $token]);
+        } elseif ($invitation->team->hasMember($user)) {
+            return redirect()->route('team.show', $invitation->team)
+                ->with('info', 'Vous êtes déjà membre de cette équipe.');
+        }
 
         return Inertia::render('Invitation/Show', [
             'invitation' => [
@@ -59,7 +76,7 @@ class InvitationController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
             ] : null,
-            'hasAccount' => !!$user,
+            'hasAccount' => (bool) $user,
         ]);
     }
 
@@ -74,20 +91,21 @@ class InvitationController extends Controller
 
         if ($invitation->isExpired()) {
             $invitation->update(['status' => 'expired']);
-            
+
             return redirect()->route('invitation.show', $token)
                 ->withErrors(['message' => 'Cette invitation a expiré.']);
         }
 
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             session(['invitation_token' => $token]);
+
             return redirect()->route('login');
         }
 
         // Vérifier si l'invitation correspond à l'email de l'utilisateur
-        if ($invitation->email && $invitation->email !== $user->email) {
+        if ($invitation->email && strcasecmp($invitation->email, $user->email) !== 0) {
             return redirect()->route('invitation.show', $token)
                 ->withErrors(['message' => 'Cette invitation ne correspond pas à votre email.']);
         }
@@ -112,7 +130,7 @@ class InvitationController extends Controller
     {
         $token = session('invitation_token');
 
-        if (!$token) {
+        if (! $token) {
             return redirect()->route('dashboard');
         }
 
@@ -120,8 +138,9 @@ class InvitationController extends Controller
             ->where('status', 'pending')
             ->first();
 
-        if (!$invitation || $invitation->isExpired()) {
+        if (! $invitation || $invitation->isExpired()) {
             session()->forget('invitation_token');
+
             return redirect()->route('dashboard')
                 ->withErrors(['message' => 'L\'invitation n\'est plus valide.']);
         }
@@ -129,8 +148,9 @@ class InvitationController extends Controller
         $user = Auth::user();
 
         // Vérifier si l'invitation correspond à l'email de l'utilisateur
-        if ($invitation->email && $invitation->email !== $user->email) {
+        if ($invitation->email && strcasecmp($invitation->email, $user->email) !== 0) {
             session()->forget('invitation_token');
+
             return redirect()->route('dashboard')
                 ->withErrors(['message' => 'Cette invitation ne correspond pas à votre email.']);
         }
@@ -166,21 +186,27 @@ class InvitationController extends Controller
     {
         $request->validate([
             'team_id' => 'required|exists:teams,id',
-            'role' => 'required|in:manager,editor,viewer',
+            'role' => ['required', Rule::in(['manager', 'editor', 'viewer'])],
         ]);
 
         $team = Team::findOrFail($request->team_id);
         $user = Auth::user();
 
         // Vérifier les permissions
-        if (!Gate::allows('invite-team-member', $team)) {
-            abort(403, 'Vous n\'avez pas la permission d\'inviter des membres.');
+        if (! Gate::allows('invite-team-member', $team)) {
+            abort(403, 'Vous n’avez pas la permission d’inviter des membres.');
+        }
+
+        if ($request->role === 'manager' && ! $team->isOwner($user) && ! $user->isSuperAdmin()) {
+            return response()->json([
+                'message' => 'Seul le propriétaire de l’équipe peut inviter un manager.',
+            ], 422);
         }
 
         $invitation = $this->teamService->createInvitation(
             $team,
             $user,
-            null, // Pas d'email
+            null, // Pas d'email (lien public)
             $request->role,
             $request->permissions ?? [],
             $request->project_access ?? []

@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\File;
 use App\Models\Project;
 use App\Models\Team;
-use App\Models\File;
+use App\Policies\FilePolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\TeamPolicy;
-use App\Policies\FilePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -34,9 +34,9 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('invite-team-member', function ($user, Team $team) {
-            if ($user->isSuperAdmin()) return true;
-            $role = $team->getMemberRole($user);
-            return in_array($role, ['owner', 'manager']);
+            return $user->isSuperAdmin()
+                || $team->isOwner($user)
+                || $team->getMemberRole($user) === 'manager';
         });
 
         Gate::define('manage-project', function ($user, Project $project) {

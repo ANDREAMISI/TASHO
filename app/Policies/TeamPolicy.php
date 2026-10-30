@@ -9,7 +9,9 @@ class TeamPolicy
 {
     public function view(User $user, Team $team): bool
     {
-        return $user->email === 'admin@tasho.com' || $team->hasMember($user);
+        return $user->isSuperAdmin()
+            || $team->owner_id === $user->id
+            || $team->hasMember($user);
     }
 
     public function create(User $user): bool
@@ -19,18 +21,20 @@ class TeamPolicy
 
     public function update(User $user, Team $team): bool
     {
-        return $user->email === 'admin@tasho.com' || $team->isOwner($user);
+        return $user->isSuperAdmin() || $team->isOwner($user);
     }
 
     public function delete(User $user, Team $team): bool
     {
-        return $user->email === 'admin@tasho.com' || $team->isOwner($user);
+        return $user->isSuperAdmin() || $team->isOwner($user);
     }
 
     public function manageMembers(User $user, Team $team): bool
     {
-        if ($user->email === 'admin@tasho.com') return true;
-        $role = $team->getMemberRole($user);
-        return in_array($role, ['owner', 'manager']);
+        if ($user->isSuperAdmin() || $team->owner_id === $user->id) {
+            return true;
+        }
+
+        return $team->getMemberRole($user) === 'manager';
     }
 }

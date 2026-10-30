@@ -48,6 +48,11 @@ Route::get('/invitation/{token}', [InvitationController::class, 'show'])->name('
 Route::post('/invitation/{token}/accept', [InvitationController::class, 'accept'])->name('invitation.accept');
 Route::post('/invitation/{token}/decline', [InvitationController::class, 'decline'])->name('invitation.decline');
 
+// Ancien format de lien d'invitation (emails déjà envoyés) : on redirige
+// vers la page d'invitation publique.
+Route::get('/team/invitations/{token}', [TeamController::class, 'acceptInvitation'])
+    ->name('team.accept-invitation');
+
 /*
 |--------------------------------------------------------------------------
 | Routes Galerie Publique (Sans authentification)
@@ -97,7 +102,6 @@ Route::middleware('auth')->group(function () {
         // Invitations
         Route::post('/{team}/invitations', [TeamController::class, 'invite'])->name('invite');
         Route::delete('/invitations/{invitation}', [TeamController::class, 'cancelInvitation'])->name('cancel-invitation');
-        Route::get('/invitations/{token}', [TeamController::class, 'acceptInvitation'])->name('accept-invitation');
 
         // Membres
         Route::delete('/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('remove-member');

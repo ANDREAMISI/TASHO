@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Team;
-use App\Models\TeamMember;
 use App\Models\TeamInvitation;
+use App\Models\TeamMember;
+use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,29 +70,44 @@ class RegisteredUserController extends Controller
 
         // Vérifier si l'utilisateur vient d'une invitation
         $invitationToken = $request->input('invitation_token') ?? session('invitation_token');
-        
+        $invitation = null;
+        $invitationMismatch = false;
+        $joinedTeam = false;
+
         if ($invitationToken) {
             $invitation = TeamInvitation::where('token', $invitationToken)
                 ->where('status', 'pending')
                 ->first();
 
-            if ($invitation && !$invitation->isExpired()) {
-                // Ajouter l'utilisateur à l'équipe
-                TeamMember::create([
-                    'team_id' => $invitation->team_id,
-                    'user_id' => $user->id,
-                    'role' => $invitation->role,
-                    'permissions' => $invitation->permissions,
-                    'joined_at' => now(),
-                ]);
+            if ($invitation && ! $invitation->isExpired()) {
+                // Une invitation nominative ne peut être acceptée qu'avec
+                // l'adresse email invitée.
+                if ($invitation->email && strcasecmp($invitation->email, $user->email) !== 0) {
+                    $invitationMismatch = true;
+                } else {
+                    TeamMember::updateOrCreate(
+                        [
+                            'team_id' => $invitation->team_id,
+                            'user_id' => $user->id,
+                        ],
+                        [
+                            'role' => $invitation->role,
+                            'permissions' => $invitation->permissions,
+                            'joined_at' => now(),
+                        ]
+                    );
 
-                $invitation->update(['status' => 'accepted']);
+                    $invitation->update(['status' => 'accepted']);
+                    session()->forget('invitation_token');
+                    $joinedTeam = true;
+                }
+            } elseif ($invitation) {
                 session()->forget('invitation_token');
             }
         }
 
         // Si l'utilisateur n'a pas été ajouté à une équipe via invitation
-        if (!$invitationToken || !isset($invitation) || !$invitation) {
+        if (! $joinedTeam) {
             // Créer une équipe par défaut
             $team = Team::create([
                 'name' => 'Mon Espace',
@@ -110,6 +125,14 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
         Auth::login($user);
+
+        if ($invitationMismatch && $invitation) {
+            return redirect()
+                ->route('invitation.show', $invitation->token)
+                ->withErrors([
+                    'message' => 'Cette invitation a été envoyée à une autre adresse email.',
+                ]);
+        }
 
         return redirect(route('dashboard', absolute: false));
     }

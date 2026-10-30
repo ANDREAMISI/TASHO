@@ -27,6 +27,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Un utilisateur arrivé via un lien d'invitation est renvoyé vers
+        // l'invitation pour pouvoir l'accepter.
+        if (! auth()->user()->isSuperAdmin() && $request->session()->has('invitation_token')) {
+            return redirect()->route('invitation.show', $request->session()->get('invitation_token'));
+        }
+
         // ✅ Redirection vers admin.dashboard si Super Admin
         if (auth()->user()->isSuperAdmin()) {
             return redirect()->route('admin.dashboard');

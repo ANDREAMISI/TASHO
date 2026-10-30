@@ -32,7 +32,7 @@ class TeamInvitationMail extends Mailable
                 'invitation' => $this->invitation,
                 'team' => $this->invitation->team,
                 'invitedBy' => $this->invitation->invitedBy,
-                'acceptUrl' => route('team.accept-invitation', $this->invitation->token),
+                'acceptUrl' => route('invitation.show', $this->invitation->token),
                 'roleLabel' => $this->getRoleLabel($this->invitation->role),
             ],
         );

@@ -80,14 +80,6 @@ export default function AppTopbar({
                     shape="circle"
                     className="!h-8 !w-8 !bg-tasho-primary !text-xs !font-semibold !text-white"
                 />
-                <div className="hidden text-left lg:block">
-                    <p className="max-w-40 truncate text-sm font-medium text-gray-900">
-                        {user?.name || 'Utilisateur'}
-                    </p>
-                    <p className="max-w-40 truncate text-xs text-gray-500">
-                        {user?.email || ''}
-                    </p>
-                </div>
                 <i className="pi pi-chevron-down hidden text-[10px] text-gray-400 lg:block" />
             </button>
 

@@ -85,7 +85,8 @@ export default function TeamIndex({ auth, teams, currentTeam, openCreate = false
                                             {currentTeam.name}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            {currentTeam.members_count || 1} membres
+                                            {currentTeam.members_count ?? 1}{' '}
+                                            {(currentTeam.members_count ?? 1) > 1 ? 'membres' : 'membre'}
                                         </p>
                                     </div>
                                 </div>

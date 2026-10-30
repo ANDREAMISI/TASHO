@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Mail\TeamInvitationMail;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\TeamMember;
 use App\Models\User;
-use App\Mail\TeamInvitationMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -19,7 +19,7 @@ class TeamService
     {
         $team = Team::create([
             'name' => $name,
-            'slug' => Str::slug($name) . '-' . Str::random(6),
+            'slug' => Str::slug($name).'-'.Str::random(6),
             'owner_id' => $owner->id,
             'description' => $description,
         ]);
@@ -66,7 +66,7 @@ class TeamService
      */
     public function sendInvitationEmail(TeamInvitation $invitation): void
     {
-        if (!$invitation->email) {
+        if (! $invitation->email) {
             return;
         }
 
@@ -78,14 +78,19 @@ class TeamService
      */
     public function acceptInvitation(TeamInvitation $invitation, User $user): void
     {
-        // Ajouter l'utilisateur à l'équipe
-        TeamMember::create([
-            'team_id' => $invitation->team_id,
-            'user_id' => $user->id,
-            'role' => $invitation->role,
-            'permissions' => $invitation->permissions,
-            'joined_at' => now(),
-        ]);
+        // Ajouter l'utilisateur à l'équipe (idempotent : évite les doublons
+        // si l'invitation est acceptée deux fois en parallèle).
+        TeamMember::updateOrCreate(
+            [
+                'team_id' => $invitation->team_id,
+                'user_id' => $user->id,
+            ],
+            [
+                'role' => $invitation->role,
+                'permissions' => $invitation->permissions,
+                'joined_at' => now(),
+            ]
+        );
 
         // Marquer l'invitation comme acceptée
         $invitation->update([
@@ -100,7 +105,7 @@ class TeamService
     {
         $member = $team->members()->where('user_id', $user->id)->first();
 
-        if (!$member) {
+        if (! $member) {
             return false;
         }
 
@@ -121,7 +126,7 @@ class TeamService
     {
         $member = $team->members()->where('user_id', $user->id)->first();
 
-        if (!$member) {
+        if (! $member) {
             return [];
         }
 
@@ -139,7 +144,7 @@ class TeamService
     {
         $member = $team->members()->where('user_id', $user->id)->first();
 
-        if (!$member) {
+        if (! $member) {
             return false;
         }
 
