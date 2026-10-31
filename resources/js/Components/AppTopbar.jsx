@@ -22,7 +22,8 @@ export default function AppTopbar({
     userMenuItems = [],
 }) {
     const userMenu = useRef(null);
-    const initials = (user?.name || 'Utilisateur').charAt(0).toUpperCase();
+    const initials =
+        user?.initials || (user?.name || 'Utilisateur').charAt(0).toUpperCase();
 
     const start = (
         <div className="flex min-w-0 items-center gap-3">
@@ -76,7 +77,9 @@ export default function AppTopbar({
                 className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-gray-100"
             >
                 <Avatar
-                    label={initials}
+                    image={user?.avatar_url || undefined}
+                    label={user?.avatar_url ? undefined : initials}
+                    imageAlt={user?.name}
                     shape="circle"
                     className="!h-8 !w-8 !bg-tasho-primary !text-xs !font-semibold !text-white"
                 />

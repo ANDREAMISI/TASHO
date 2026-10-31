@@ -145,6 +145,7 @@ import {
     Copy,
     EyeOff as EyeOffIcon,
     Tag,
+    Camera,
 } from 'lucide-react';
 
 // ============================================================
@@ -300,6 +301,7 @@ export {
     Copy,
     EyeOffIcon,
     Tag,
+    Camera,
 };
 
 // ============================================================

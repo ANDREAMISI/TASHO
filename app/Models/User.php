@@ -44,6 +44,16 @@ class User extends Authenticatable
     ];
 
     /**
+     * Attributs dérivés exposés à l'interface.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'avatar_url',
+        'initials',
+    ];
+
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>
@@ -121,6 +131,38 @@ class User extends Authenticatable
     // ============================================================
     // MÉTHODES UTILITAIRES
     // ============================================================
+
+    /**
+     * URL publique de la photo de profil (null si aucune photo).
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (! $this->avatar) {
+            return null;
+        }
+
+        return route('profile.avatar', [
+            'user' => $this->id,
+            'v' => $this->updated_at?->timestamp,
+        ]);
+    }
+
+    /**
+     * Initiales de l'utilisateur (avatar de secours).
+     */
+    public function getInitialsAttribute(): string
+    {
+        $words = preg_split('/\s+/', trim((string) $this->name)) ?: [];
+        $initials = '';
+
+        foreach (array_slice($words, 0, 2) as $word) {
+            if ($word !== '') {
+                $initials .= mb_substr($word, 0, 1);
+            }
+        }
+
+        return mb_strtoupper($initials) ?: 'U';
+    }
 
     /**
      * Vérifier si l'utilisateur est super admin

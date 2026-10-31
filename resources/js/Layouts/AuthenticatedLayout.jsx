@@ -55,7 +55,8 @@ export default function AuthenticatedLayout({ children, user }) {
         .find((item) => isLinkActive(url, item));
     const projectContext = component === 'Project/Show' ? props?.project : null;
     const currentTab = props?.tab || 'overview';
-    const initials = (user?.name || 'Utilisateur').charAt(0).toUpperCase();
+    const initials =
+        user?.initials || (user?.name || 'Utilisateur').charAt(0).toUpperCase();
 
     useEffect(() => {
         setMobileOpen(false);
@@ -164,7 +165,9 @@ export default function AuthenticatedLayout({ children, user }) {
                     <div className="shrink-0 border-t border-gray-200 p-3">
                         <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-2">
                             <Avatar
-                                label={initials}
+                                image={user?.avatar_url || undefined}
+                                label={user?.avatar_url ? undefined : initials}
+                                imageAlt={user?.name}
                                 shape="circle"
                                 className="!h-9 !w-9 !bg-tasho-primary !text-sm !font-semibold !text-white"
                             />
