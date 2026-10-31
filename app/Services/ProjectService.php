@@ -239,6 +239,44 @@ class ProjectService
     }
 
     /**
+     * Arborescence complète des dossiers d'un projet (navigation latérale).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getFolderTree(Project $project): array
+    {
+        $folders = Folder::query()
+            ->where('project_id', $project->id)
+            ->withCount(['files', 'children'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'parent_id']);
+
+        $byParent = $folders->groupBy(fn (Folder $folder) => $folder->parent_id ?? 0);
+
+        $build = function (int $parentId, int $depth = 0) use (&$build, $byParent): array {
+            if ($depth > 20) {
+                return [];
+            }
+
+            $nodes = [];
+
+            foreach ($byParent->get($parentId, []) as $folder) {
+                $nodes[] = [
+                    'id' => $folder->id,
+                    'name' => $folder->name,
+                    'files_count' => (int) $folder->files_count,
+                    'children_count' => (int) $folder->children_count,
+                    'children' => $build($folder->id, $depth + 1),
+                ];
+            }
+
+            return $nodes;
+        };
+
+        return $build(0);
+    }
+
+    /**
      * Fil d'Ariane d'un dossier (racine → dossier courant).
      *
      * @return array<int, array{id: int, name: string}>

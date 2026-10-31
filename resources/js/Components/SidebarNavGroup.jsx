@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { ChevronDownIcon } from '@/Components/Icons';
 
@@ -14,9 +14,10 @@ export function isLinkActive(url, item) {
     return path === prefix || path.startsWith(`${prefix}/`);
 }
 
-export default function SidebarNavGroup({ group, url, onNavigate }) {
+export default function SidebarNavGroup({ group, url, onNavigate, autoScroll = true }) {
     const containsActiveItem = group.items.some((item) => isLinkActive(url, item));
     const [open, setOpen] = useState(true);
+    const activeRef = useRef(null);
 
     useEffect(() => {
         if (containsActiveItem) {
@@ -24,13 +25,23 @@ export default function SidebarNavGroup({ group, url, onNavigate }) {
         }
     }, [containsActiveItem]);
 
+    useEffect(() => {
+        if (autoScroll && containsActiveItem && activeRef.current) {
+            activeRef.current.scrollIntoView({ block: 'nearest' });
+        }
+    }, [autoScroll, containsActiveItem, url]);
+
     return (
         <div>
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}
                 aria-expanded={open}
-                className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 transition-colors hover:text-gray-600"
+                className={`flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                    containsActiveItem
+                        ? 'text-tasho-primary hover:text-tasho-primary/80'
+                        : 'text-gray-400 hover:text-gray-600'
+                }`}
             >
                 <span>{group.label}</span>
                 <ChevronDownIcon
@@ -52,22 +63,24 @@ export default function SidebarNavGroup({ group, url, onNavigate }) {
                                 <Link
                                     href={item.href}
                                     onClick={onNavigate}
-                                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                                    ref={active ? activeRef : undefined}
+                                    aria-current={active ? 'page' : undefined}
+                                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary/40 ${
                                         active
-                                            ? 'bg-tasho-primary/10 text-tasho-primary'
+                                            ? 'bg-tasho-primary text-white shadow-sm'
                                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                     }`}
                                 >
                                     <item.icon
-                                        className={`h-5 w-5 shrink-0 ${
+                                        className={`h-5 w-5 shrink-0 transition-colors ${
                                             active
-                                                ? 'text-tasho-primary'
+                                                ? 'text-white'
                                                 : 'text-gray-400 group-hover:text-gray-500'
                                         }`}
                                     />
                                     <span className="truncate">{item.name}</span>
                                     {active && (
-                                        <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-tasho-primary" />
+                                        <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-white/80" />
                                     )}
                                 </Link>
                             </li>

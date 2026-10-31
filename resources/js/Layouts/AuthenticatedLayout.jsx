@@ -6,6 +6,7 @@ import { Sidebar } from 'primereact/sidebar';
 import AppTopbar from '@/Components/AppTopbar';
 import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';
 import SidebarPlanCard from '@/Components/SidebarPlanCard';
+import SidebarProjectNav from '@/Components/SidebarProjectNav';
 import { ToastProvider } from '@/Components/Prime/ToastProvider';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import {
@@ -43,7 +44,7 @@ const navigation = [
 ];
 
 export default function AuthenticatedLayout({ children, user }) {
-    const { url, props } = usePage();
+    const { url, props, component } = usePage();
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const [desktopOpen, setDesktopOpen] = useState(true);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -52,6 +53,8 @@ export default function AuthenticatedLayout({ children, user }) {
     const activeItem = navigation
         .flatMap((group) => group.items)
         .find((item) => isLinkActive(url, item));
+    const projectContext = component === 'Project/Show' ? props?.project : null;
+    const currentTab = props?.tab || 'overview';
     const initials = (user?.name || 'Utilisateur').charAt(0).toUpperCase();
 
     useEffect(() => {
@@ -132,11 +135,22 @@ export default function AuthenticatedLayout({ children, user }) {
                     {/* Navigation */}
                     <nav className="flex-1 overflow-y-auto px-3 py-4">
                         <div className="space-y-6">
+                            {projectContext && (
+                                <SidebarProjectNav
+                                    project={projectContext}
+                                    tab={currentTab}
+                                    folderTree={props?.folderTree || []}
+                                    currentFolderId={props?.currentFolderId ?? null}
+                                    onNavigate={() => setMobileOpen(false)}
+                                />
+                            )}
+
                             {navigation.map((group) => (
                                 <SidebarNavGroup
                                     key={group.label}
                                     group={group}
                                     url={url}
+                                    autoScroll={!projectContext}
                                     onNavigate={() => setMobileOpen(false)}
                                 />
                             ))}
@@ -182,7 +196,11 @@ export default function AuthenticatedLayout({ children, user }) {
                 {/* Barre supérieure */}
                 <AppTopbar
                     title={activeItem?.name || 'Espace client'}
-                    subtitle="Espace client TASHO"
+                    subtitle={
+                        projectContext
+                            ? `Projets · ${projectContext.title}`
+                            : 'Espace client TASHO'
+                    }
                     user={user}
                     onToggleSidebar={toggleSidebar}
                     userMenuItems={userMenuItems}

@@ -212,6 +212,8 @@ class ProjectController extends Controller
             'canManage' => Gate::allows('update', $project),
             'canManageMembers' => Gate::allows('manageMembers', $project),
             'canUpload' => Gate::allows('create', [\App\Models\File::class, $project]),
+            'folderTree' => $this->projectService->getFolderTree($project),
+            'currentFolderId' => null,
         ];
 
         if ($tab === 'overview') {
@@ -287,6 +289,7 @@ class ProjectController extends Controller
             $payload['currentFolder'] = $currentFolder
                 ? ['id' => $currentFolder->id, 'name' => $currentFolder->name]
                 : null;
+            $payload['currentFolderId'] = $currentFolder?->id;
             $payload['breadcrumb'] = $this->projectService->getBreadcrumb($currentFolder);
             $payload['filters'] = $filters;
             $payload['folderOptions'] = $this->projectService->getFolderOptions($project);
