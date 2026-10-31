@@ -558,9 +558,9 @@ export default function ActivityIndex({ logs, stats = {}, filters = {}, actions 
                                             })
                                         }
                                         aria-label="Date de début"
-                                        className="w-full rounded-[5px] border border-gray-300 px-2 py-2 text-xs text-gray-700 focus:border-tasho-primary focus:outline-none focus:ring-1 focus:ring-tasho-primary"
+                                        className="min-w-0 flex-1 rounded-[5px] border border-gray-300 px-2 py-2 text-xs text-gray-700 focus:border-tasho-primary focus:outline-none focus:ring-1 focus:ring-tasho-primary"
                                     />
-                                    <span className="text-xs text-gray-400">→</span>
+                                    <span className="shrink-0 text-xs text-gray-400">→</span>
                                     <input
                                         type="date"
                                         value={filters.date_to || ''}
@@ -570,7 +570,7 @@ export default function ActivityIndex({ logs, stats = {}, filters = {}, actions 
                                             })
                                         }
                                         aria-label="Date de fin"
-                                        className="w-full rounded-[5px] border border-gray-300 px-2 py-2 text-xs text-gray-700 focus:border-tasho-primary focus:outline-none focus:ring-1 focus:ring-tasho-primary"
+                                        className="min-w-0 flex-1 rounded-[5px] border border-gray-300 px-2 py-2 text-xs text-gray-700 focus:border-tasho-primary focus:outline-none focus:ring-1 focus:ring-tasho-primary"
                                     />
                                 </div>
                             </div>
