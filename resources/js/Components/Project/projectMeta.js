@@ -15,6 +15,7 @@ import {
     ShareIcon,
     TrashIcon,
     UserIcon,
+    UserPlusIcon,
     VideoCameraIcon,
 } from '@/Components/Icons';
 
@@ -171,6 +172,21 @@ export const ACTIVITY_ACTIONS = {
         label: 'Création',
         icon: PlusIcon,
         tone: 'bg-emerald-50 text-emerald-600',
+    },
+    create_client: {
+        label: 'Client ajouté',
+        icon: UserPlusIcon,
+        tone: 'bg-emerald-50 text-emerald-600',
+    },
+    update_client: {
+        label: 'Client modifié',
+        icon: PencilIcon,
+        tone: 'bg-orange-50 text-orange-600',
+    },
+    delete_client: {
+        label: 'Client supprimé',
+        icon: TrashIcon,
+        tone: 'bg-red-50 text-red-600',
     },
     authenticate: {
         label: 'Connexion',

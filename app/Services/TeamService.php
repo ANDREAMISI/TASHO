@@ -12,6 +12,9 @@ use Illuminate\Support\Str;
 
 class TeamService
 {
+    public function __construct(private NotificationService $notifications)
+    {
+    }
     /**
      * Créer une nouvelle équipe
      */
@@ -96,6 +99,9 @@ class TeamService
         $invitation->update([
             'status' => 'accepted',
         ]);
+
+        // Prévenir la personne qui a invité et le propriétaire de l'équipe.
+        $this->notifications->teamInvitationAccepted($invitation, $user);
     }
 
     /**

@@ -8,6 +8,7 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.jsx',
+        './resources/js/**/*.js',
     ],
 
     theme: {
@@ -17,7 +18,7 @@ export default {
             },
             colors: {
                 tasho: {
-                    primary: '#6C5CE7',
+                    primary: '#1B9CD8',
                     secondary: '#2D3436',
                     accent: '#F6AD55',
                     success: '#48BB78',

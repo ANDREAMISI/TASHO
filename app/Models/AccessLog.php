@@ -9,6 +9,7 @@ class AccessLog extends Model
 {
     protected $fillable = [
         'user_id',
+        'team_id',
         'project_id',
         'file_id',
         'client_id',
@@ -34,6 +35,11 @@ class AccessLog extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
+    }
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
@@ -53,6 +59,21 @@ class AccessLog extends Model
     public function scopeRecent($query, int $limit = 50)
     {
         return $query->orderBy('created_at', 'desc')->limit($limit);
+    }
+
+    /**
+     * Restreindre les journaux à une équipe.
+     *
+     * `team_id` est la source principale ; les journaux plus anciens sont
+     * rattachés via leur projet ou leur client.
+     */
+    public function scopeForTeam($query, Team $team)
+    {
+        return $query->where(function ($query) use ($team) {
+            $query->where('team_id', $team->id)
+                ->orWhereHas('project', fn ($project) => $project->where('team_id', $team->id))
+                ->orWhereHas('client', fn ($client) => $client->where('team_id', $team->id));
+        });
     }
 
     public function scopeForUser($query, User $user)

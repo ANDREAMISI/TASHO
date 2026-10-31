@@ -20,7 +20,7 @@
             overflow: hidden;
         }
         .header {
-            background: #6C5CE7;
+            background: #1B9CD8;
             padding: 32px 40px;
             text-align: center;
         }
@@ -69,7 +69,7 @@
         }
         .button {
             display: inline-block;
-            background: #6C5CE7;
+            background: #1B9CD8;
             color: white;
             padding: 12px 32px;
             border-radius: 8px;
@@ -88,7 +88,7 @@
             font-size: 14px;
         }
         .footer a {
-            color: #6C5CE7;
+            color: #1B9CD8;
             text-decoration: none;
         }
     </style>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
+use App\Services\NotificationService;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -14,10 +15,12 @@ use Inertia\Inertia;
 class TeamController extends Controller
 {
     protected TeamService $teamService;
+    protected NotificationService $notifications;
 
-    public function __construct(TeamService $teamService)
+    public function __construct(TeamService $teamService, NotificationService $notifications)
     {
         $this->teamService = $teamService;
+        $this->notifications = $notifications;
     }
 
     /**
@@ -287,6 +290,8 @@ class TeamController extends Controller
 
         $team->members()->detach($user->id);
 
+        $this->notifications->teamMemberRemoved($team, $user, $request->user());
+
         return back()->with('success', 'Membre retiré avec succès !');
     }
 
@@ -333,6 +338,8 @@ class TeamController extends Controller
         $team->members()->updateExistingPivot($user->id, [
             'role' => $request->role,
         ]);
+
+        $this->notifications->teamRoleChanged($team, $user, $request->role, $request->user());
 
         return back()->with('success', 'Rôle mis à jour avec succès !');
     }

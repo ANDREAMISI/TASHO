@@ -23,6 +23,7 @@ class ProjectAccess extends Model
         'max_views',
         'view_count',
         'last_accessed_at',
+        'first_downloaded_at',
     ];
 
     protected $casts = [
@@ -33,6 +34,7 @@ class ProjectAccess extends Model
         'can_favorite' => 'boolean',
         'expires_at' => 'datetime',
         'last_accessed_at' => 'datetime',
+        'first_downloaded_at' => 'datetime',
         'view_count' => 'integer',
         'max_views' => 'integer',
     ];

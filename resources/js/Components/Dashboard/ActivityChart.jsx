@@ -123,8 +123,8 @@ export default function ActivityChart({ series = [], className = '' }) {
                         >
                             <defs>
                                 <linearGradient id="activity-fill" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#6C5CE7" stopOpacity={0.25} />
-                                    <stop offset="100%" stopColor="#6C5CE7" stopOpacity={0} />
+                                    <stop offset="0%" stopColor="#1B9CD8" stopOpacity={0.25} />
+                                    <stop offset="100%" stopColor="#1B9CD8" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
 
@@ -156,7 +156,7 @@ export default function ActivityChart({ series = [], className = '' }) {
                                 type="monotone"
                                 dataKey="count"
                                 name="Événements"
-                                stroke="#6C5CE7"
+                                stroke="#1B9CD8"
                                 strokeWidth={2}
                                 fill="url(#activity-fill)"
                                 activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}

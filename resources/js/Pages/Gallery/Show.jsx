@@ -56,7 +56,7 @@ function CommentAvatar({ name }) {
         .toUpperCase();
 
     return (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-tasho-primary/15 to-indigo-100 text-xs font-semibold text-tasho-primary ring-1 ring-tasho-primary/10">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-tasho-primary/15 to-sky-100 text-xs font-semibold text-tasho-primary ring-1 ring-tasho-primary/10">
             {initials || '?'}
         </span>
     );
@@ -544,7 +544,7 @@ export default function GalleryShow({ access, project, files, folders, permissio
 
                 <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {/* Hero */}
-                    <section className="relative mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#6C5CE7] via-[#5C4FD6] to-[#2D3436] px-5 py-6 shadow-xl shadow-tasho-primary/10 sm:px-8 sm:py-8">
+                    <section className="relative mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1B9CD8] via-[#1583B8] to-[#2D3436] px-5 py-6 shadow-xl shadow-tasho-primary/10 sm:px-8 sm:py-8">
                         <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
                         <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-tasho-accent/20 blur-3xl" />
 

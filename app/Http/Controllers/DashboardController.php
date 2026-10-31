@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Services\DashboardService;
+use App\Services\NotificationService;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
     protected DashboardService $dashboardService;
+    protected NotificationService $notifications;
 
-    public function __construct(DashboardService $dashboardService)
-    {
+    public function __construct(
+        DashboardService $dashboardService,
+        NotificationService $notifications
+    ) {
         $this->dashboardService = $dashboardService;
+        $this->notifications = $notifications;
     }
 
     public function index()
@@ -28,6 +33,9 @@ class DashboardController extends Controller
             return redirect()->route('team.index', ['create' => 1])
                 ->with('info', 'Créez une équipe pour commencer.');
         }
+
+        // Alertes d'abonnement / stockage, au plus une fois par jour.
+        $this->notifications->scanAccountAlerts($team);
 
         $stats = $this->dashboardService->getStats($team);
 

@@ -186,6 +186,17 @@ Route::middleware('auth')->group(function () {
     });
 
     // ============================================================
+    // Routes Notifications
+    // ============================================================
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'page'])->name('index');
+        Route::get('/{notification}/open', [NotificationController::class, 'open'])->name('open');
+        Route::post('/read-all', [NotificationController::class, 'readAll'])->name('read-all');
+        Route::post('/{notification}/read', [NotificationController::class, 'read'])->name('read');
+        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('destroy');
+    });
+
+    // ============================================================
     // Routes Paramètres (à venir)
     // ============================================================
     Route::prefix('settings')->name('settings.')->group(function () {

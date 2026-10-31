@@ -6,6 +6,8 @@ use App\Models\AccessLog;
 use App\Models\Client;
 use App\Models\Folder;
 use App\Models\Project;
+use App\Models\User;
+use App\Services\NotificationService;
 use App\Services\ProjectService;
 use App\Support\FileCategory;
 use Illuminate\Http\Request;
@@ -15,10 +17,12 @@ use Inertia\Inertia;
 class ProjectController extends Controller
 {
     protected ProjectService $projectService;
+    protected NotificationService $notifications;
 
-    public function __construct(ProjectService $projectService)
+    public function __construct(ProjectService $projectService, NotificationService $notifications)
     {
         $this->projectService = $projectService;
+        $this->notifications = $notifications;
     }
 
     /**
@@ -462,6 +466,15 @@ class ProjectController extends Controller
             'assigned_at' => now(),
         ]);
 
+        if ($member = User::find($request->user_id)) {
+            $this->notifications->projectMemberAdded(
+                $project,
+                $member,
+                $request->user(),
+                $request->role,
+            );
+        }
+
         return back()->with('success', 'Membre ajouté au projet avec succès !');
     }
 
@@ -478,6 +491,10 @@ class ProjectController extends Controller
         }
 
         $project->members()->detach($userId);
+
+        if ($member = User::find($userId)) {
+            $this->notifications->projectMemberRemoved($project, $member, auth()->user());
+        }
 
         return back()->with('success', 'Membre retiré du projet avec succès !');
     }
@@ -501,6 +518,15 @@ class ProjectController extends Controller
         $project->members()->updateExistingPivot($userId, [
             'role' => $request->role,
         ]);
+
+        if ($member = User::find($userId)) {
+            $this->notifications->projectRoleChanged(
+                $project,
+                $member,
+                $request->role,
+                $request->user(),
+            );
+        }
 
         return back()->with('success', 'Rôle mis à jour avec succès !');
     }

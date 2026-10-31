@@ -5,6 +5,18 @@
     --tasho-radius: 5px;
 }
 
+/*
+ * Aligne les accents PrimeReact (focus, options sélectionnées, surlignage)
+ * sur le bleu de la marque.
+ */
+html:root {
+    --primary-color: #1b9cd8;
+    --primary-color-text: #ffffff;
+    --focus-ring: 0 0 0 0.2rem rgba(27, 156, 216, 0.2);
+    --highlight-bg: #e8f5fc;
+    --highlight-text-color: #1479a8;
+}
+
 @layer tailwind-base {
     @tailwind base;
 }
@@ -59,8 +71,8 @@
 .app-form-dialog .p-calendar:not(.p-disabled).p-focus > .p-inputtext,
 .app-form-dialog .p-inputnumber:not(.p-disabled).p-focus > .p-inputtext,
 .app-form-dialog .p-password:not(.p-disabled).p-focus > .p-inputtext {
-    border-color: #6c5ce7;
-    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.18);
+    border-color: #1b9cd8;
+    box-shadow: 0 0 0 2px rgba(27, 156, 216, 0.18);
 }
 
 /*

@@ -48,6 +48,10 @@ class HandleInertiaRequests extends Middleware
                 : null,
             // Préférences d'interface de l'utilisateur connecté.
             'preferences' => fn () => $user?->preferences,
+            // Compteur et dernières notifications pour la cloche.
+            'notificationsSummary' => fn () => $user
+                ? app(\App\Services\NotificationService::class)->summaryFor($user)
+                : ['unread_count' => 0, 'recent' => []],
         ];
     }
 }

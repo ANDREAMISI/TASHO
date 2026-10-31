@@ -7,6 +7,7 @@ use App\Models\File;
 use App\Models\Project;
 use App\Models\ProjectAccess;
 use App\Services\AuditService;
+use App\Services\NotificationService;
 use App\Services\ShareService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -19,11 +20,16 @@ class ShareController extends Controller
 {
     protected ShareService $shareService;
     protected AuditService $auditService;
+    protected NotificationService $notifications;
 
-    public function __construct(ShareService $shareService, AuditService $auditService)
-    {
+    public function __construct(
+        ShareService $shareService,
+        AuditService $auditService,
+        NotificationService $notifications
+    ) {
         $this->shareService = $shareService;
         $this->auditService = $auditService;
+        $this->notifications = $notifications;
     }
 
     /**
@@ -211,7 +217,9 @@ class ShareController extends Controller
      */
     public function publicGallery($token)
     {
-        $access = ProjectAccess::with('project:id,title,description,client_name')
+        // `owner_id` est indispensable : `shareViewed()` en déduit le
+        // destinataire de la notification.
+        $access = ProjectAccess::with('project:id,owner_id,title,description,client_name')
             ->where('access_token', $token)
             ->firstOrFail();
 
@@ -237,8 +245,14 @@ class ShareController extends Controller
         }
 
         // Incrémenter le compteur de vues uniquement à l'affichage réel.
+        $isFirstView = (int) $access->view_count === 0;
+
         $access->increment('view_count');
         $access->update(['last_accessed_at' => now()]);
+
+        if ($isFirstView) {
+            $this->notifications->shareViewed($access);
+        }
 
         return Inertia::render('Gallery/Show', [
             // Ne jamais exposer le mot de passe ou le token complet du modèle.
@@ -347,6 +361,15 @@ class ShareController extends Controller
             ]
         );
 
+        // Prévenir le propriétaire et les membres du projet.
+        $this->notifications->commentReceived(
+            $access->project,
+            $request->name,
+            $request->email,
+            $comment->file,
+            $access->id,
+        );
+
         return response()->json(['success' => true, 'comment' => $comment]);
     }
 
@@ -394,6 +417,14 @@ class ShareController extends Controller
                 'access_id' => $access->id,
             ],
         ]);
+
+        $this->notifications->favoriteReceived(
+            $access->project,
+            $request->name,
+            $request->email,
+            $file,
+            $access->id,
+        );
 
         return response()->json([
             'success' => true,
@@ -476,8 +507,16 @@ class ShareController extends Controller
             abort(403, 'Le téléchargement est désactivé pour cette galerie.');
         }
 
+        // Une seule notification par lien de partage.
+        $isFirstDownload = $access->first_downloaded_at === null;
+
         $file->increment('download_count');
         $file->update(['last_accessed_at' => now()]);
+
+        if ($isFirstDownload) {
+            $access->update(['first_downloaded_at' => now()]);
+            $this->notifications->shareDownloaded($access, $file);
+        }
 
         return Storage::disk($file->disk)->download($file->path, $file->original_name);
     }

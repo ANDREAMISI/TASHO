@@ -232,7 +232,7 @@ export default function ProfileEdit({ stats = {}, memberSince = null, mustVerify
             <div className="mx-auto w-full max-w-5xl space-y-6">
                 {/* En-tête */}
                 <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                    <div className="h-24 bg-gradient-to-r from-tasho-primary/15 via-indigo-50 to-white" />
+                    <div className="h-24 bg-gradient-to-r from-tasho-primary/15 via-sky-50 to-white" />
 
                     <div className="px-5 pb-5 sm:px-7">
                         <div className="-mt-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
