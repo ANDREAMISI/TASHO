@@ -9,13 +9,12 @@ import StatsCard from '@/Components/Dashboard/StatsCard';
 import StorageChart from '@/Components/Dashboard/StorageChart';
 import StorageUsage from '@/Components/Dashboard/StorageUsage';
 import {
-    BoltIcon,
-    CloudIcon,
-    DocumentIcon,
-    FolderIcon,
-    PlusIcon,
-    UsersIcon,
-} from '@/Components/Icons';
+    FileStatIcon,
+    FolderStatIcon,
+    StorageStatIcon,
+    UsersStatIcon,
+} from '@/Components/Dashboard/StatIllustrations';
+import { PlusIcon } from '@/Components/Icons';
 import { formatBytes, formatNumber, plural } from '@/utils/format';
 
 function greeting() {
@@ -38,7 +37,7 @@ function todayLabel() {
 }
 
 export default function Dashboard({ auth, stats, team }) {
-    const { projects, files, clients, storage, activity, plan, recent_projects: recentProjects } =
+    const { projects, files, clients, storage, activity, recent_projects: recentProjects } =
         stats;
 
     const firstName = (auth.user?.name || '').split(' ')[0];
@@ -56,13 +55,6 @@ export default function Dashboard({ auth, stats, team }) {
                                 {greeting()}
                                 {firstName ? `, ${firstName}` : ''}
                             </h1>
-
-                            {plan?.name && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-tasho-primary/10 px-2.5 py-0.5 text-xs font-medium text-tasho-primary">
-                                    <BoltIcon className="h-3.5 w-3.5" />
-                                    Plan {plan.name}
-                                </span>
-                            )}
                         </div>
 
                         <p className="mt-1 text-sm text-gray-500">
@@ -90,12 +82,13 @@ export default function Dashboard({ auth, stats, team }) {
                 <GettingStarted projects={projects} files={files} clients={clients} />
 
                 {/* Indicateurs */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <StatsCard
                         label="Projets"
                         value={formatNumber(projects.total)}
-                        icon={FolderIcon}
+                        icon={FolderStatIcon}
                         accent="indigo"
+                        variant="icon"
                         hint={`${plural(projects.active, 'actif', 'actifs')} · ${plural(
                             projects.completed,
                             'terminé',
@@ -108,8 +101,9 @@ export default function Dashboard({ auth, stats, team }) {
                     <StatsCard
                         label="Fichiers"
                         value={formatNumber(files.total)}
-                        icon={DocumentIcon}
+                        icon={FileStatIcon}
                         accent="sky"
+                        variant="icon"
                         hint={`${plural(files.images, 'image', 'images')} · ${plural(
                             files.videos,
                             'vidéo',
@@ -122,8 +116,9 @@ export default function Dashboard({ auth, stats, team }) {
                     <StatsCard
                         label="Clients"
                         value={formatNumber(clients.total)}
-                        icon={UsersIcon}
+                        icon={UsersStatIcon}
                         accent="emerald"
+                        variant="icon"
                         hint={`${plural(clients.active, 'client actif', 'clients actifs')} ce mois-ci`}
                         trend={clients.trend}
                         href={route('clients.index')}
@@ -132,8 +127,9 @@ export default function Dashboard({ auth, stats, team }) {
                     <StatsCard
                         label="Stockage"
                         value={formatBytes(storage.used)}
-                        icon={CloudIcon}
+                        icon={StorageStatIcon}
                         accent="amber"
+                        variant="icon"
                         hint={`sur ${formatBytes(storage.limit)} inclus dans votre plan`}
                         href={route('settings.subscription')}
                     >

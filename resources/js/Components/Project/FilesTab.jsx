@@ -7,6 +7,7 @@ import { InputText } from 'primereact/inputtext';
 import Button from '@/Components/Button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import FilePreviewDialog from './FilePreviewDialog';
+import FolderIllustration from './FolderIllustration';
 import Pagination from './Pagination';
 import useFilePreview from './useFilePreview';
 import { categoryMeta, FILE_CATEGORY_OPTIONS } from './projectMeta';
@@ -16,7 +17,6 @@ import {
     ChevronRight,
     CloudArrowUpIcon,
     EyeIcon,
-    FolderIcon,
     FolderOpenIcon,
     FolderPlusIcon,
     HeartIcon,
@@ -523,26 +523,25 @@ export default function FilesTab({
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                         {folders.map((folder) => (
-                            <div
-                                key={folder.id}
-                                className="group relative flex flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-tasho-primary/30 hover:shadow-md"
-                            >
+                            <div key={folder.id} className="group relative">
                                 <button
                                     type="button"
                                     onClick={() => openFolder(folder.id)}
-                                    className="flex items-start gap-3 text-left"
+                                    title={folder.name}
+                                    className="flex w-full flex-col items-center gap-2 rounded-xl px-2 py-3 transition hover:bg-amber-50/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary/40"
                                 >
-                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-500">
-                                        <FolderIcon className="h-5 w-5" />
-                                    </span>
+                                    <FolderIllustration
+                                        filled={folder.files_count > 0 || folder.children_count > 0}
+                                        className="h-20 w-auto drop-shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:scale-[1.03]"
+                                    />
 
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block truncate text-sm font-semibold text-gray-900">
+                                    <span className="w-full min-w-0">
+                                        <span className="block truncate text-sm font-medium text-gray-900">
                                             {folder.name}
                                         </span>
-                                        <span className="mt-0.5 block text-xs text-gray-500">
+                                        <span className="mt-0.5 block truncate text-[11px] text-gray-500">
                                             {plural(folder.files_count, 'fichier', 'fichiers')}
                                             {folder.children_count > 0 &&
                                                 ` · ${plural(
@@ -550,15 +549,14 @@ export default function FilesTab({
                                                     'sous-dossier',
                                                     'sous-dossiers',
                                                 )}`}
-                                        </span>
-                                        <span className="mt-0.5 block text-xs text-gray-400">
-                                            {formatBytes(folder.files_size)}
+                                            {folder.files_size > 0 &&
+                                                ` · ${formatBytes(folder.files_size)}`}
                                         </span>
                                     </span>
                                 </button>
 
                                 {canManage && (
-                                    <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                                    <div className="absolute right-1 top-1 flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                                         <button
                                             type="button"
                                             onClick={() => openRenameFolder(folder)}

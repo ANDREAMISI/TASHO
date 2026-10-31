@@ -8,6 +8,13 @@ const ACCENTS = {
     amber: 'bg-amber-50 text-amber-600 ring-amber-100',
 };
 
+const ICON_COLORS = {
+    indigo: 'text-indigo-500',
+    sky: 'text-sky-500',
+    emerald: 'text-emerald-500',
+    amber: 'text-amber-500',
+};
+
 /**
  * Badge de tendance : compare la période courante (30 j) à la précédente.
  */
@@ -56,41 +63,80 @@ export default function StatsCard({
     trend,
     href,
     children,
+    variant = 'default',
 }) {
-    const card = (
-        <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-300 hover:shadow-md">
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-500">{label}</p>
-                    <p className="mt-1.5 text-2xl font-semibold tracking-tight text-gray-900 tabular-nums">
-                        {value}
-                    </p>
+    const card =
+        variant === 'icon' ? (
+            <div className="flex h-full flex-col items-center px-4 py-6 text-center">
+                {Icon && (
+                    <Icon
+                        className={`h-24 w-24 transition duration-200 group-hover:scale-105 ${
+                            ICON_COLORS[accent] || ICON_COLORS.indigo
+                        }`}
+                        strokeWidth={1.5}
+                    />
+                )}
+
+                <p className="mt-4 text-sm font-medium text-gray-500">{label}</p>
+
+                <p className="mt-1 text-3xl font-semibold tracking-tight text-gray-900 tabular-nums">
+                    {value}
+                </p>
+
+                {hint && <p className="mt-1 text-xs leading-5 text-gray-500">{hint}</p>}
+
+                <div className="mt-auto w-full pt-4">
+                    {children}
+
+                    {trend && (
+                        <div
+                            className={`flex flex-wrap items-center justify-center gap-2 ${
+                                children ? 'mt-3' : ''
+                            }`}
+                        >
+                            <TrendBadge trend={trend} />
+                        </div>
+                    )}
+                </div>
+            </div>
+        ) : (
+            <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-300 hover:shadow-md">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-500">{label}</p>
+                        <p className="mt-1.5 text-2xl font-semibold tracking-tight text-gray-900 tabular-nums">
+                            {value}
+                        </p>
+                    </div>
+
+                    {Icon && (
+                        <span
+                            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${
+                                ACCENTS[accent] || ACCENTS.indigo
+                            }`}
+                        >
+                            <Icon className="h-5 w-5" />
+                        </span>
+                    )}
                 </div>
 
-                {Icon && (
-                    <span
-                        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${
-                            ACCENTS[accent] || ACCENTS.indigo
-                        }`}
-                    >
-                        <Icon className="h-5 w-5" />
-                    </span>
-                )}
+                {hint && <p className="mt-1 text-xs leading-5 text-gray-500">{hint}</p>}
+
+                <div className="mt-auto pt-4">
+                    {children}
+
+                    {trend && (
+                        <div
+                            className={`flex flex-wrap items-center justify-between gap-2 ${
+                                children ? 'mt-3' : ''
+                            }`}
+                        >
+                            <TrendBadge trend={trend} />
+                        </div>
+                    )}
+                </div>
             </div>
-
-            {hint && <p className="mt-1 text-xs leading-5 text-gray-500">{hint}</p>}
-
-            <div className="mt-auto pt-4">
-                {children}
-
-                {trend && (
-                    <div className={`flex flex-wrap items-center justify-between gap-2 ${children ? 'mt-3' : ''}`}>
-                        <TrendBadge trend={trend} />
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+        );
 
     if (!href) {
         return card;
@@ -99,7 +145,7 @@ export default function StatsCard({
     return (
         <Link
             href={href}
-            className="block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
+            className="group block h-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
         >
             {card}
         </Link>
