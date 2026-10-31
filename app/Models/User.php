@@ -133,6 +133,33 @@ class User extends Authenticatable
     // ============================================================
 
     /**
+     * Préférences d'interface par défaut.
+     *
+     * @var array<string, mixed>
+     */
+    public const DEFAULT_PREFERENCES = [
+        'default_landing' => 'dashboard',
+        'files_sort' => 'recent',
+        'show_plan_card' => true,
+        'sidebar_open' => true,
+    ];
+
+    /**
+     * Préférences d'interface de l'utilisateur (valeurs par défaut incluses).
+     *
+     * @return array<string, mixed>
+     */
+    public function getPreferencesAttribute(): array
+    {
+        $stored = $this->settings['preferences'] ?? [];
+
+        return array_merge(
+            self::DEFAULT_PREFERENCES,
+            is_array($stored) ? $stored : [],
+        );
+    }
+
+    /**
      * URL publique de la photo de profil (null si aucune photo).
      */
     public function getAvatarUrlAttribute(): ?string

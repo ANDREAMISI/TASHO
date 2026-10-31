@@ -190,6 +190,7 @@ Route::middleware('auth')->group(function () {
     // ============================================================
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
+        Route::put('/preferences', [SettingsController::class, 'updatePreferences'])->name('update-preferences');
         Route::put('/team', [SettingsController::class, 'updateTeam'])->name('update-team');
         Route::put('/profile', [SettingsController::class, 'updateProfile'])->name('update-profile');
         Route::get('/subscription', [SettingsController::class, 'subscription'])->name('subscription');

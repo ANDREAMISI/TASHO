@@ -46,6 +46,8 @@ class HandleInertiaRequests extends Middleware
             'billing' => fn () => $user && ! $user->isSuperAdmin()
                 ? app(BillingSummaryService::class)->forUser($user)
                 : null,
+            // Préférences d'interface de l'utilisateur connecté.
+            'preferences' => fn () => $user?->preferences,
         ];
     }
 }

@@ -261,7 +261,10 @@ class ProjectController extends Controller
                 'folder_id' => $request->filled('folder_id') ? (int) $request->input('folder_id') : null,
                 'category' => (string) $request->input('category', ''),
                 'search' => trim((string) $request->input('search', '')),
-                'sort' => (string) $request->input('sort', 'recent'),
+                'sort' => (string) $request->input(
+                    'sort',
+                    $request->user()->preferences['files_sort'] ?? 'recent',
+                ),
                 'favorite' => $request->boolean('favorite'),
             ];
 

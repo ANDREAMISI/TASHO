@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class SettingsController extends Controller
@@ -19,11 +20,43 @@ class SettingsController extends Controller
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $user = $request->user();
+        $team = $user->getActiveTeam();
+
         return Inertia::render('Settings/Index', [
-            'user' => Auth::user(),
+            'user' => $user,
+            'team' => $team ? [
+                'id' => $team->id,
+                'name' => $team->name,
+                'description' => $team->description,
+                'members_count' => $team->members()->count(),
+                'is_owner' => $team->isOwner($user),
+            ] : null,
+            'preferences' => $user->preferences,
         ]);
+    }
+
+    /**
+     * Enregistrer les préférences d'interface de l'utilisateur.
+     */
+    public function updatePreferences(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'default_landing' => ['required', Rule::in(['dashboard', 'projects'])],
+            'files_sort' => ['required', Rule::in(['recent', 'name', 'size'])],
+            'show_plan_card' => ['required', 'boolean'],
+            'sidebar_open' => ['required', 'boolean'],
+        ]);
+
+        $user = $request->user();
+        $settings = $user->settings ?? [];
+        $settings['preferences'] = array_merge($user->preferences, $data);
+
+        $user->forceFill(['settings' => $settings])->save();
+
+        return back()->with('success', 'Préférences enregistrées.');
     }
 
     public function updateTeam(Request $request): RedirectResponse

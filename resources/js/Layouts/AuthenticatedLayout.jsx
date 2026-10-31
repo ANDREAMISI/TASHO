@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { Avatar } from 'primereact/avatar';
 import Button from '@/Components/Button';
@@ -46,8 +46,11 @@ const navigation = [
 export default function AuthenticatedLayout({ children, user }) {
     const { url, props, component } = usePage();
     const isDesktop = useMediaQuery('(min-width: 1024px)');
-    const [desktopOpen, setDesktopOpen] = useState(true);
+    const preferences = props.preferences || {};
+    const sidebarOpenPreference = preferences.sidebar_open !== false;
+    const [desktopOpen, setDesktopOpen] = useState(sidebarOpenPreference);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const appliedSidebarPreference = useRef(sidebarOpenPreference);
 
     const sidebarVisible = isDesktop ? desktopOpen : mobileOpen;
     const activeItem = navigation
@@ -61,6 +64,16 @@ export default function AuthenticatedLayout({ children, user }) {
     useEffect(() => {
         setMobileOpen(false);
     }, [url]);
+
+    // La préférence « barre latérale ouverte » s'applique dès son enregistrement.
+    useEffect(() => {
+        if (appliedSidebarPreference.current === sidebarOpenPreference) {
+            return;
+        }
+
+        appliedSidebarPreference.current = sidebarOpenPreference;
+        setDesktopOpen(sidebarOpenPreference);
+    }, [sidebarOpenPreference]);
 
     const toggleSidebar = () => {
         if (isDesktop) {
@@ -159,7 +172,9 @@ export default function AuthenticatedLayout({ children, user }) {
                     </nav>
 
                     {/* Plan */}
-                    <SidebarPlanCard billing={props.billing} />
+                    {preferences.show_plan_card !== false && (
+                        <SidebarPlanCard billing={props.billing} />
+                    )}
 
                     {/* Utilisateur */}
                     <div className="shrink-0 border-t border-gray-200 p-3">

@@ -38,7 +38,13 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Page d'accueil choisie dans les préférences de l'utilisateur.
+        $landing = auth()->user()->preferences['default_landing'] ?? 'dashboard';
+        $fallback = $landing === 'projects'
+            ? route('projects.index', absolute: false)
+            : route('dashboard', absolute: false);
+
+        return redirect()->intended($fallback);
     }
 
     public function destroy(Request $request): RedirectResponse
