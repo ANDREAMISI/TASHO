@@ -61,6 +61,7 @@ import {
     ArrowRightOnRectangleIcon,
     CurrencyDollarIcon,
     BoltIcon,
+    EllipsisHorizontalIcon,
 } from '@heroicons/react/24/outline';
 
 // Heroicons (Solid)
@@ -211,6 +212,7 @@ export {
     ArrowRightOnRectangleIcon,
     CurrencyDollarIcon,
     BoltIcon,
+    EllipsisHorizontalIcon,
 };
 
 // ============================================================

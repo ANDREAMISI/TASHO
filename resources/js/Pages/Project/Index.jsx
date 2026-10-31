@@ -1,23 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react';
 import { Dropdown } from 'primereact/dropdown';
-import { Tag } from 'primereact/tag';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import StatsCard from '@/Components/Dashboard/StatsCard';
 import Pagination from '@/Components/Project/Pagination';
+import FolderIllustration from '@/Components/Project/FolderIllustration';
 import ProjectFormModal from '@/Components/Project/ProjectFormModal';
-import { priorityMeta, statusMeta } from '@/Components/Project/projectMeta';
 import {
+    ChartBarIcon,
     CloudIcon,
     DocumentIcon,
+    EllipsisHorizontalIcon,
     FolderIcon,
     FolderOpenIcon,
+    InformationCircleIcon,
     LinkIcon,
     MagnifyingGlassIcon,
     PlusIcon,
-    UserGroupIcon,
+    ShareIcon,
+    TrashIcon,
 } from '@/Components/Icons';
-import { formatBytes, formatNumber, plural, timeAgo } from '@/utils/format';
+import { formatBytes, formatNumber, plural } from '@/utils/format';
 
 const SORT_OPTIONS = [
     { value: 'recent', label: 'Dernière activité' },
@@ -40,79 +45,144 @@ const STATUS_TABS = [
     { value: 'archived', label: 'Archivés', countKey: 'archived' },
 ];
 
-function ProjectCard({ project }) {
-    const status = statusMeta(project.status);
-    const priority = priorityMeta(project.priority);
+function menuItemClasses(focus, danger = false) {
+    if (danger) {
+        return `flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-red-600 transition ${
+            focus ? 'bg-red-50' : ''
+        }`;
+    }
+
+    return `flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition ${
+        focus ? 'bg-gray-50 text-gray-900' : ''
+    }`;
+}
+
+function ProjectTile({ project }) {
+    const canManage = Boolean(project.is_owner);
+
+    const projectUrl = (tab) =>
+        route('projects.show', tab ? { project: project.id, tab } : project.id);
+
+    const deleteProject = () => {
+        confirmDialog({
+            message: `Supprimer le projet « ${project.title} » ? Cette action est définitive.`,
+            header: 'Supprimer le projet',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Supprimer',
+            rejectLabel: 'Annuler',
+            acceptClassName: 'p-button-danger',
+            accept: () =>
+                router.delete(route('projects.destroy', project.id), {
+                    preserveScroll: true,
+                }),
+        });
+    };
 
     return (
-        <Link
-            href={route('projects.show', project.id)}
-            className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:border-tasho-primary/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
-        >
-            <div className="flex items-start justify-between gap-3 px-5 pt-5">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-tasho-primary/10 text-tasho-primary">
-                    <FolderOpenIcon className="h-5 w-5" />
-                </span>
+        <div className="group flex flex-col items-center">
+            <div className="relative">
+                <Link
+                    href={projectUrl()}
+                    className="flex items-center justify-center rounded-2xl p-2 transition hover:bg-amber-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary/40"
+                >
+                    <FolderIllustration
+                        filled={project.files_count > 0}
+                        className="h-24 w-auto drop-shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:scale-[1.03] sm:h-28"
+                    />
+                </Link>
 
-                <Tag
-                    value={status.label}
-                    severity={status.severity}
-                    rounded
-                    className="!px-2.5 !py-0.5 !text-[11px] !font-medium"
-                />
+                <Menu as="div" className="absolute -right-2 -top-2 z-20">
+                    <MenuButton
+                        aria-label={`Actions pour ${project.title}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-gray-400 shadow-sm ring-1 ring-gray-200/70 transition hover:bg-white hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary/40 data-[open]:bg-white data-[open]:text-gray-700"
+                    >
+                        <EllipsisHorizontalIcon className="h-5 w-5" />
+                    </MenuButton>
+
+                    <Transition
+                        enter="transition ease-out duration-100"
+                        enterFrom="transform opacity-0 scale-95"
+                        enterTo="transform opacity-100 scale-100"
+                        leave="transition ease-in duration-75"
+                        leaveFrom="transform opacity-100 scale-100"
+                        leaveTo="transform opacity-0 scale-95"
+                    >
+                        <MenuItems className="absolute right-0 z-50 mt-1 w-52 origin-top-right rounded-xl border border-gray-100 bg-white p-1.5 shadow-lg focus:outline-none">
+                            <MenuItem>
+                                {({ focus }) => (
+                                    <Link href={projectUrl()} className={menuItemClasses(focus)}>
+                                        <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+                                        Informations
+                                    </Link>
+                                )}
+                            </MenuItem>
+
+                            <MenuItem>
+                                {({ focus }) => (
+                                    <Link
+                                        href={projectUrl('files')}
+                                        className={menuItemClasses(focus)}
+                                    >
+                                        <FolderOpenIcon className="h-4 w-4 text-gray-400" />
+                                        Fichiers
+                                    </Link>
+                                )}
+                            </MenuItem>
+
+                            <MenuItem>
+                                {({ focus }) => (
+                                    <Link
+                                        href={projectUrl('activity')}
+                                        className={menuItemClasses(focus)}
+                                    >
+                                        <ChartBarIcon className="h-4 w-4 text-gray-400" />
+                                        Activité
+                                    </Link>
+                                )}
+                            </MenuItem>
+
+                            {canManage && (
+                                <>
+                                    <div className="my-1 h-px bg-gray-100" />
+
+                                    <MenuItem>
+                                        {({ focus }) => (
+                                            <Link
+                                                href={projectUrl('shares')}
+                                                className={menuItemClasses(focus)}
+                                            >
+                                                <ShareIcon className="h-4 w-4 text-gray-400" />
+                                                Partager
+                                            </Link>
+                                        )}
+                                    </MenuItem>
+
+                                    <MenuItem>
+                                        {({ focus }) => (
+                                            <button
+                                                type="button"
+                                                onClick={deleteProject}
+                                                className={menuItemClasses(focus, true)}
+                                            >
+                                                <TrashIcon className="h-4 w-4 text-red-500" />
+                                                Supprimer
+                                            </button>
+                                        )}
+                                    </MenuItem>
+                                </>
+                            )}
+                        </MenuItems>
+                    </Transition>
+                </Menu>
             </div>
 
-            <div className="px-5 pt-3">
-                <h2 className="truncate text-base font-semibold text-gray-900 group-hover:text-tasho-primary">
-                    {project.title}
-                </h2>
-
-                <p className="mt-0.5 truncate text-xs text-gray-500">
-                    {project.client_name || 'Aucun client associé'}
-                </p>
-
-                <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm leading-5 text-gray-600">
-                    {project.description || 'Aucune description pour ce projet.'}
-                </p>
-            </div>
-
-            <div className="mt-auto space-y-3 px-5 py-4">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-500">
-                    <span className="inline-flex items-center gap-1.5">
-                        <DocumentIcon className="h-3.5 w-3.5 text-gray-400" />
-                        <span className="tabular-nums">{formatNumber(project.files_count)}</span>
-                        {project.files_count > 1 ? 'fichiers' : 'fichier'}
-                    </span>
-
-                    <span className="inline-flex items-center gap-1.5">
-                        <FolderIcon className="h-3.5 w-3.5 text-gray-400" />
-                        <span className="tabular-nums">{formatNumber(project.folders_count)}</span>
-                        {project.folders_count > 1 ? 'dossiers' : 'dossier'}
-                    </span>
-
-                    <span className="inline-flex items-center gap-1.5">
-                        <UserGroupIcon className="h-3.5 w-3.5 text-gray-400" />
-                        <span className="tabular-nums">{formatNumber(project.members_count)}</span>
-                        {project.members_count > 1 ? 'membres' : 'membre'}
-                    </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 border-t border-gray-100 pt-3 text-xs">
-                    <span className="inline-flex items-center gap-1.5 font-medium text-gray-600">
-                        <span className={`h-1.5 w-1.5 rounded-full ${priority.dot}`} />
-                        {priority.label}
-                        <span className="text-gray-300">·</span>
-                        <span className="font-normal text-gray-500">
-                            {formatBytes(project.files_size)}
-                        </span>
-                    </span>
-
-                    <span className="whitespace-nowrap text-gray-400">
-                        {timeAgo(project.updated_at)}
-                    </span>
-                </div>
-            </div>
-        </Link>
+            <Link
+                href={projectUrl()}
+                className="mt-2 line-clamp-2 max-w-[11rem] text-center text-sm font-medium leading-snug text-gray-900 transition hover:text-tasho-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary/40"
+            >
+                {project.title}
+            </Link>
+        </div>
     );
 }
 
@@ -346,9 +416,9 @@ export default function ProjectIndex({
                 </div>
 
                 {projects.data.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
                         {projects.data.map((project) => (
-                            <ProjectCard key={project.id} project={project} />
+                            <ProjectTile key={project.id} project={project} />
                         ))}
                     </div>
                 ) : (
@@ -399,6 +469,8 @@ export default function ProjectIndex({
                 clients={clients}
                 teamName={team?.name}
             />
+
+            <ConfirmDialog />
         </AuthenticatedLayout>
     );
 }
