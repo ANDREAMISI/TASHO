@@ -56,11 +56,11 @@ class Plan extends Model
 
     public function getFormattedPriceMonthly(): string
     {
-        return number_format($this->price_monthly, 0, ',', ' ') . ' FBU';
+        return number_format($this->price_monthly, 0, ',', ' ').' '.($this->currency ?: 'FBU');
     }
 
     public function getFormattedPriceYearly(): string
     {
-        return number_format($this->price_yearly, 0, ',', ' ') . ' FBU';
+        return number_format($this->price_yearly, 0, ',', ' ').' '.($this->currency ?: 'FBU');
     }
 }

@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import confirmAdminAction from '@/Components/AdminConfirmDialog';
 import {
     ArrowLeftIcon,
     UserIcon,
@@ -31,19 +32,23 @@ export default function SubscriptionsShow({ auth, subscription }) {
     };
 
     const toggleSubscription = () => {
-        if (confirm(`Voulez-vous ${subscription.status === 'active' ? 'désactiver' : 'activer'} cet abonnement ?`)) {
-            router.post(route('admin.subscriptions.toggle', subscription.id), {}, {
+        confirmAdminAction({
+            message: `Voulez-vous ${subscription.status === 'active' ? 'désactiver' : 'activer'} cet abonnement ?`,
+            onAccept: () => router.post(route('admin.subscriptions.toggle', subscription.id), {}, {
                 preserveScroll: true,
-            });
-        }
+            }),
+        });
     };
 
     const deleteSubscription = () => {
-        if (confirm(`Voulez-vous vraiment supprimer cet abonnement ?`)) {
-            router.delete(route('admin.subscriptions.destroy', subscription.id), {
+        confirmAdminAction({
+            header: 'Supprimer l’abonnement',
+            message: 'Voulez-vous vraiment supprimer cet abonnement ?',
+            danger: true,
+            onAccept: () => router.delete(route('admin.subscriptions.destroy', subscription.id), {
                 onSuccess: () => router.visit(route('admin.subscriptions.index')),
-            });
-        }
+            }),
+        });
     };
 
     const formatDate = (date) => {
@@ -66,14 +71,9 @@ export default function SubscriptionsShow({ auth, subscription }) {
         });
     };
 
-    const formatAmount = (amount) => {
+    const formatAmount = (amount, currency = subscription.currency || 'FBU') => {
         if (amount === 0) return 'Gratuit';
-        return new Intl.NumberFormat('fr-BI', {
-            style: 'currency',
-            currency: 'BIF',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
+        return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(amount))} ${currency}`;
     };
 
     return (

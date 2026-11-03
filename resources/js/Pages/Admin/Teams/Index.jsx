@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import confirmAdminAction from '@/Components/AdminConfirmDialog';
 import {
     MagnifyingGlassIcon,
     EyeIcon,
@@ -21,9 +22,12 @@ export default function TeamsIndex({ auth, teams }) {
     };
 
     const deleteTeam = (team) => {
-        if (confirm(`Voulez-vous vraiment supprimer l'équipe "${team.name}" ?`)) {
-            router.delete(route('admin.teams.destroy', team.id), { preserveScroll: true });
-        }
+        confirmAdminAction({
+            header: 'Supprimer l’équipe',
+            message: `Voulez-vous vraiment supprimer l'équipe "${team.name}" ?`,
+            danger: true,
+            onAccept: () => router.delete(route('admin.teams.destroy', team.id), { preserveScroll: true }),
+        });
     };
 
     return (

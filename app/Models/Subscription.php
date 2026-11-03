@@ -63,6 +63,14 @@ class Subscription extends Model
 
     public function isExpiringSoon(int $days = 7): bool
     {
-        return $this->end_date && $this->end_date->diffInDays(now()) <= $days;
+        if ($this->status !== 'active' || ! $this->end_date || $days < 0) {
+            return false;
+        }
+
+        $today = now()->startOfDay();
+        $endDate = $this->end_date->copy()->startOfDay();
+
+        return $endDate->greaterThan($today)
+            && $endDate->lessThanOrEqualTo($today->copy()->addDays($days));
     }
 }

@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import Button from '@/Components/Button';
+import confirmAdminAction from '@/Components/AdminConfirmDialog';
+import SubscriptionFormDialog from '@/Components/Admin/SubscriptionFormDialog';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -14,9 +17,25 @@ import {
     ArrowPathIcon,
 } from '@/Components/Icons';
 
-export default function SubscriptionsIndex({ auth, subscriptions, filters, plans, statuses }) {
+export default function SubscriptionsIndex({
+    auth,
+    subscriptions,
+    filters,
+    plans,
+    users,
+    statuses,
+    initialSubscription,
+    openCreateForm,
+}) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
+    const [createOpen, setCreateOpen] = useState(Boolean(openCreateForm));
+    const [editingSubscription, setEditingSubscription] = useState(initialSubscription || null);
+
+    useEffect(() => {
+        if (initialSubscription) setEditingSubscription(initialSubscription);
+        if (openCreateForm) setCreateOpen(true);
+    }, [initialSubscription, openCreateForm]);
 
     const statusColors = {
         active: 'bg-green-100 text-green-800',
@@ -43,30 +62,28 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
     };
 
     const toggleSubscription = (subscription) => {
-        if (confirm(`Voulez-vous ${subscription.status === 'active' ? 'désactiver' : 'activer'} cet abonnement ?`)) {
-            router.post(route('admin.subscriptions.toggle', subscription.id), {}, {
+        confirmAdminAction({
+            message: `Voulez-vous ${subscription.status === 'active' ? 'désactiver' : 'activer'} cet abonnement ?`,
+            onAccept: () => router.post(route('admin.subscriptions.toggle', subscription.id), {}, {
                 preserveScroll: true,
-            });
-        }
+            }),
+        });
     };
 
     const deleteSubscription = (subscription) => {
-        if (confirm(`Voulez-vous vraiment supprimer l'abonnement de ${subscription.user?.name} ?`)) {
-            router.delete(route('admin.subscriptions.destroy', subscription.id), {
+        confirmAdminAction({
+            header: 'Supprimer l’abonnement',
+            message: `Voulez-vous vraiment supprimer l'abonnement de ${subscription.user?.name} ?`,
+            danger: true,
+            onAccept: () => router.delete(route('admin.subscriptions.destroy', subscription.id), {
                 preserveScroll: true,
-            });
-        }
+            }),
+        });
     };
 
-    // ✅ Formatage du montant en FBU
-    const formatAmount = (amount) => {
-        if (amount === 0) return 'Gratuit';
-        return new Intl.NumberFormat('fr-BI', {
-            style: 'currency',
-            currency: 'BIF',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
+    const formatAmount = (amount, currency) => {
+        if (Number(amount) === 0) return 'Gratuit';
+        return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(amount))} ${currency || 'FBU'}`;
     };
 
     return (
@@ -84,13 +101,13 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                             </p>
                         </div>
                         <div className="mt-4 sm:mt-0 flex items-center space-x-2">
-                            <Link
-                                href={route('admin.subscriptions.create')}
-                                className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md font-medium hover:bg-tasho-primary/90 transition"
+                            <Button
+                                onClick={() => setCreateOpen(true)}
+                                className="!bg-tasho-primary !border-tasho-primary"
                             >
                                 <PlusIcon className="h-4 w-4 mr-2" />
                                 Nouvel abonnement
-                            </Link>
+                            </Button>
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
                                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
@@ -232,11 +249,16 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-medium text-gray-900">
-                                                        {formatAmount(subscription.amount)}
+                                                        {formatAmount(subscription.amount, subscription.currency)}
                                                     </div>
                                                     <div className="text-xs text-gray-400">
                                                         / {subscription.billing_cycle}
                                                     </div>
+                                                    {subscription.payment_method && (
+                                                        <div className="text-xs text-gray-400">
+                                                            {subscription.payment_method}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm text-gray-500">
@@ -257,13 +279,19 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                                                         >
                                                             <EyeIcon className="h-4 w-4" />
                                                         </Link>
-                                                        <Link
-                                                            href={route('admin.subscriptions.edit', subscription.id)}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setEditingSubscription({
+                                                                ...subscription,
+                                                                user_id: subscription.user?.id,
+                                                                user_name: subscription.user?.name,
+                                                                start_date: subscription.start_date?.slice(0, 10),
+                                                            })}
                                                             className="text-gray-400 hover:text-gray-600 transition"
                                                             title="Modifier"
                                                         >
                                                             <PencilIcon className="h-4 w-4" />
-                                                        </Link>
+                                                        </button>
                                                         <button
                                                             onClick={() => toggleSubscription(subscription)}
                                                             className={`transition ${
@@ -333,6 +361,18 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                     </div>
                 </div>
             </div>
+            <SubscriptionFormDialog
+                key={editingSubscription?.id || 'new'}
+                visible={createOpen || Boolean(editingSubscription)}
+                onHide={() => {
+                    setCreateOpen(false);
+                    setEditingSubscription(null);
+                }}
+                subscription={editingSubscription}
+                plans={plans}
+                users={users}
+                statuses={statuses}
+            />
         </AdminLayout>
     );
 }

@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\Subscription;
-use App\Models\Team;
 use App\Models\User;
 use App\Services\SubscriptionService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -26,7 +26,7 @@ class SubscriptionController extends Controller
      */
     private function checkSuperAdmin()
     {
-        if (!Auth::check() || !Auth::user()->isSuperAdmin()) {
+        if (! Auth::check() || ! Auth::user()->isSuperAdmin()) {
             abort(403, 'Accès réservé aux administrateurs.');
         }
     }
@@ -51,10 +51,10 @@ class SubscriptionController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->whereHas('user', function ($q2) use ($request) {
-                    $q2->where('name', 'LIKE', '%' . $request->search . '%')
-                       ->orWhere('email', 'LIKE', '%' . $request->search . '%');
+                    $q2->where('name', 'LIKE', '%'.$request->search.'%')
+                        ->orWhere('email', 'LIKE', '%'.$request->search.'%');
                 })->orWhereHas('team', function ($q2) use ($request) {
-                    $q2->where('name', 'LIKE', '%' . $request->search . '%');
+                    $q2->where('name', 'LIKE', '%'.$request->search.'%');
                 });
             });
         }
@@ -78,32 +78,53 @@ class SubscriptionController extends Controller
                         'name' => $subscription->plan->name,
                         'slug' => $subscription->plan->slug,
                     ] : null,
+                    'plan_id' => $subscription->plan_id,
                     'status' => $subscription->status,
                     'status_label' => $this->getStatusLabel($subscription->status),
                     'status_color' => $this->getStatusColor($subscription->status),
                     'billing_cycle' => $subscription->billing_cycle,
                     'amount' => $subscription->amount,
-                    'amount_formatted' => $this->formatAmount($subscription->amount),
+                    'currency' => $subscription->currency ?? $subscription->plan?->currency ?? 'FBU',
+                    'amount_formatted' => $this->formatAmount(
+                        $subscription->amount,
+                        $subscription->currency ?? $subscription->plan?->currency
+                    ),
                     'start_date' => $subscription->start_date,
                     'end_date' => $subscription->end_date,
                     'last_payment_at' => $subscription->last_payment_at,
                     'next_payment_at' => $subscription->next_payment_at,
                     'notes' => $subscription->notes,
+                    'payment_method' => $subscription->payment_method,
                     'created_at' => $subscription->created_at,
                     'is_active' => $subscription->isActive(),
                     'is_expired' => $subscription->isExpired(),
-                    'is_expiring_soon' => $subscription->isExpiringSoon(7),
+                    'is_expiring_soon' => $subscription->isExpiringSoon(21),
                 ];
             });
 
-        $plans = Plan::where('is_active', true)->get(['id', 'name', 'slug']);
+        $subscriptionToEdit = $request->filled('edit')
+            ? Subscription::with(['user', 'plan'])->findOrFail($request->integer('edit'))
+            : null;
+
+        $plansQuery = Plan::where('is_active', true);
+        if ($subscriptionToEdit) {
+            $plansQuery->orWhereKey($subscriptionToEdit->plan_id);
+        }
+
+        $plans = $plansQuery->orderBy('sort_order')
+            ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']);
         $statuses = ['active', 'inactive', 'expired', 'cancelled'];
 
         return Inertia::render('Admin/Subscriptions/Index', [
             'subscriptions' => $subscriptions,
             'filters' => $request->only(['status', 'plan_id', 'search']),
             'plans' => $plans,
+            'users' => User::orderBy('name')->get(['id', 'name', 'email']),
             'statuses' => $statuses,
+            'initialSubscription' => $subscriptionToEdit
+                ? $this->subscriptionFormData($subscriptionToEdit)
+                : null,
+            'openCreateForm' => $request->boolean('create'),
         ]);
     }
 
@@ -114,19 +135,7 @@ class SubscriptionController extends Controller
     {
         $this->checkSuperAdmin();
 
-        $plans = Plan::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']);
-            
-        $users = User::orderBy('name')
-            ->get(['id', 'name', 'email']);
-
-        return Inertia::render('Admin/Subscriptions/Create', [
-            'plans' => $plans,
-            'users' => $users,
-            'billingCycles' => ['monthly', 'yearly'],
-            'statuses' => ['active', 'inactive', 'expired', 'cancelled'],
-        ]);
+        return redirect()->route('admin.subscriptions.index', ['create' => 1]);
     }
 
     /**
@@ -142,28 +151,31 @@ class SubscriptionController extends Controller
             'status' => 'required|in:active,inactive,expired,cancelled',
             'billing_cycle' => 'required|in:monthly,yearly',
             'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after:start_date',
             'amount' => 'nullable|integer|min:0',
+            'currency' => 'nullable|string|size:3|alpha',
             'payment_method' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
         ]);
 
         $plan = Plan::findOrFail($request->plan_id);
         $user = User::findOrFail($request->user_id);
-        
+
         // Récupérer la première équipe de l'utilisateur
         $team = $user->teams()->first();
-        
-        if (!$team) {
+
+        if (! $team) {
             return back()->withErrors([
-                'user_id' => 'Cet utilisateur n\'appartient à aucune équipe.'
+                'user_id' => 'Cet utilisateur n\'appartient à aucune équipe.',
             ]);
         }
 
-        // Montant en FBU
-        $amount = $request->amount ?? ($request->billing_cycle === 'monthly' 
-            ? $plan->price_monthly 
+        $amount = $request->amount ?? ($request->billing_cycle === 'monthly'
+            ? $plan->price_monthly
             : $plan->price_yearly);
+        $startDate = Carbon::parse($request->start_date);
+        $endDate = $request->billing_cycle === 'monthly'
+            ? $startDate->copy()->addMonthNoOverflow()
+            : $startDate->copy()->addYearNoOverflow();
 
         $subscription = Subscription::create([
             'user_id' => $request->user_id,
@@ -172,9 +184,9 @@ class SubscriptionController extends Controller
             'status' => $request->status,
             'billing_cycle' => $request->billing_cycle,
             'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
+            'end_date' => $endDate,
             'amount' => $amount,
-            'currency' => 'FBU',
+            'currency' => strtoupper($request->currency ?: $plan->currency ?: 'FBU'),
             'payment_method' => $request->payment_method,
             'notes' => $request->notes,
         ]);
@@ -203,7 +215,11 @@ class SubscriptionController extends Controller
                 'status_color' => $this->getStatusColor($subscription->status),
                 'billing_cycle' => $subscription->billing_cycle,
                 'amount' => $subscription->amount,
-                'amount_formatted' => $this->formatAmount($subscription->amount),
+                'currency' => $subscription->currency ?? $subscription->plan?->currency ?? 'FBU',
+                'amount_formatted' => $this->formatAmount(
+                    $subscription->amount,
+                    $subscription->currency ?? $subscription->plan?->currency
+                ),
                 'payment_method' => $subscription->payment_method,
                 'payment_data' => $subscription->payment_data,
                 'start_date' => $subscription->start_date,
@@ -215,8 +231,8 @@ class SubscriptionController extends Controller
                 'updated_at' => $subscription->updated_at,
                 'is_active' => $subscription->isActive(),
                 'is_expired' => $subscription->isExpired(),
-                'days_remaining' => $subscription->end_date 
-                    ? now()->diffInDays($subscription->end_date, false) 
+                'days_remaining' => $subscription->end_date
+                    ? now()->diffInDays($subscription->end_date, false)
                     : null,
             ],
         ]);
@@ -231,32 +247,7 @@ class SubscriptionController extends Controller
 
         $subscription->load(['user', 'team', 'plan']);
 
-        $plans = Plan::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']);
-            
-        $users = User::orderBy('name')
-            ->get(['id', 'name', 'email']);
-
-        return Inertia::render('Admin/Subscriptions/Edit', [
-            'subscription' => [
-                'id' => $subscription->id,
-                'user_id' => $subscription->user_id,
-                'team_id' => $subscription->team_id,
-                'plan_id' => $subscription->plan_id,
-                'status' => $subscription->status,
-                'billing_cycle' => $subscription->billing_cycle,
-                'start_date' => $subscription->start_date ? $subscription->start_date->format('Y-m-d') : null,
-                'end_date' => $subscription->end_date ? $subscription->end_date->format('Y-m-d') : null,
-                'amount' => $subscription->amount,
-                'payment_method' => $subscription->payment_method,
-                'notes' => $subscription->notes,
-            ],
-            'plans' => $plans,
-            'users' => $users,
-            'billingCycles' => ['monthly', 'yearly'],
-            'statuses' => ['active', 'inactive', 'expired', 'cancelled'],
-        ]);
+        return redirect()->route('admin.subscriptions.index', ['edit' => $subscription->id]);
     }
 
     /**
@@ -271,24 +262,29 @@ class SubscriptionController extends Controller
             'status' => 'required|in:active,inactive,expired,cancelled',
             'billing_cycle' => 'required|in:monthly,yearly',
             'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after:start_date',
             'amount' => 'nullable|integer|min:0',
+            'currency' => 'nullable|string|size:3|alpha',
             'payment_method' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
         ]);
 
         $plan = Plan::findOrFail($request->plan_id);
-        $amount = $request->amount ?? ($request->billing_cycle === 'monthly' 
-            ? $plan->price_monthly 
+        $amount = $request->amount ?? ($request->billing_cycle === 'monthly'
+            ? $plan->price_monthly
             : $plan->price_yearly);
+        $startDate = Carbon::parse($request->start_date);
+        $endDate = $request->billing_cycle === 'monthly'
+            ? $startDate->copy()->addMonthNoOverflow()
+            : $startDate->copy()->addYearNoOverflow();
 
         $subscription->update([
             'plan_id' => $request->plan_id,
             'status' => $request->status,
             'billing_cycle' => $request->billing_cycle,
             'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
+            'end_date' => $endDate,
             'amount' => $amount,
+            'currency' => strtoupper($request->currency ?: $plan->currency ?: 'FBU'),
             'payment_method' => $request->payment_method,
             'notes' => $request->notes,
         ]);
@@ -320,8 +316,8 @@ class SubscriptionController extends Controller
         $newStatus = $subscription->status === 'active' ? 'inactive' : 'active';
         $subscription->update(['status' => $newStatus]);
 
-        $message = $newStatus === 'active' 
-            ? 'Abonnement activé avec succès !' 
+        $message = $newStatus === 'active'
+            ? 'Abonnement activé avec succès !'
             : 'Abonnement désactivé avec succès !';
 
         return back()->with('success', $message);
@@ -330,10 +326,30 @@ class SubscriptionController extends Controller
     /**
      * Formater le montant en FBU
      */
-    private function formatAmount($amount)
+    private function formatAmount($amount, ?string $currency = 'FBU')
     {
-        if ($amount === 0) return 'Gratuit';
-        return number_format($amount, 0, ',', ' ') . ' FBU';
+        if ($amount === 0) {
+            return 'Gratuit';
+        }
+
+        return number_format($amount, 0, ',', ' ').' '.($currency ?: 'FBU');
+    }
+
+    private function subscriptionFormData(Subscription $subscription): array
+    {
+        return [
+            'id' => $subscription->id,
+            'user_id' => $subscription->user_id,
+            'user_name' => $subscription->user?->name,
+            'plan_id' => $subscription->plan_id,
+            'status' => $subscription->status,
+            'billing_cycle' => $subscription->billing_cycle,
+            'start_date' => $subscription->start_date?->format('Y-m-d'),
+            'amount' => $subscription->amount,
+            'currency' => $subscription->currency ?? $subscription->plan?->currency ?? 'FBU',
+            'payment_method' => $subscription->payment_method,
+            'notes' => $subscription->notes,
+        ];
     }
 
     /**

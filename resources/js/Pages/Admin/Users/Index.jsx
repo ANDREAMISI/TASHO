@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import confirmAdminAction from '@/Components/AdminConfirmDialog';
 import {
     MagnifyingGlassIcon,
     EyeIcon,
@@ -11,25 +12,39 @@ import {
     FilterIcon,
 } from '@/Components/Icons';
 
-export default function UsersIndex({ auth, users }) {
-    const [searchTerm, setSearchTerm] = useState('');
+export default function UsersIndex({ auth, users, filters }) {
+    const [searchTerm, setSearchTerm] = useState(filters?.search || '');
     const [showFilters, setShowFilters] = useState(false);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        router.get(route('admin.users.index'), { search: searchTerm }, { preserveState: true });
-    };
+    useEffect(() => {
+        const search = searchTerm.trim();
+        if (search === (filters?.search || '')) return undefined;
+
+        const timeout = setTimeout(() => {
+            router.get(
+                route('admin.users.index'),
+                search ? { search } : {},
+                { preserveState: true, preserveScroll: true, replace: true },
+            );
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [searchTerm, filters?.search]);
 
     const toggleUser = (user) => {
-        if (confirm(`Voulez-vous ${user.is_active ? 'désactiver' : 'activer'} l'utilisateur ${user.name} ?`)) {
-            router.post(route('admin.users.toggle', user.id), {}, { preserveScroll: true });
-        }
+        confirmAdminAction({
+            message: `Voulez-vous ${user.is_active ? 'désactiver' : 'activer'} l'utilisateur ${user.name} ?`,
+            onAccept: () => router.post(route('admin.users.toggle', user.id), {}, { preserveScroll: true }),
+        });
     };
 
     const deleteUser = (user) => {
-        if (confirm(`Voulez-vous vraiment supprimer l'utilisateur ${user.name} ?`)) {
-            router.delete(route('admin.users.destroy', user.id), { preserveScroll: true });
-        }
+        confirmAdminAction({
+            header: 'Supprimer l’utilisateur',
+            message: `Voulez-vous vraiment supprimer l'utilisateur ${user.name} ?`,
+            danger: true,
+            onAccept: () => router.delete(route('admin.users.destroy', user.id), { preserveScroll: true }),
+        });
     };
 
     return (
@@ -59,16 +74,17 @@ export default function UsersIndex({ auth, users }) {
 
                     {/* Search */}
                     <div className="mt-6">
-                        <form onSubmit={handleSearch} className="relative">
+                        <div className="relative">
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Rechercher un utilisateur..."
-                                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-tasho-primary focus:border-tasho-primary"
+                                placeholder="Rechercher par nom, e-mail, profession ou téléphone..."
+                                aria-label="Rechercher des utilisateurs"
+                                className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-4 focus:border-tasho-primary focus:ring-tasho-primary"
                             />
-                        </form>
+                        </div>
                     </div>
 
                     {/* Users Table */}

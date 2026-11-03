@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import confirmAdminAction from '@/Components/AdminConfirmDialog';
 import {
     ArrowLeftIcon,
     UserGroupIcon,
@@ -16,11 +17,14 @@ import {
 
 export default function TeamsShow({ auth, team }) {
     const deleteTeam = () => {
-        if (confirm(`Voulez-vous vraiment supprimer l'équipe "${team.name}" ?`)) {
-            router.delete(route('admin.teams.destroy', team.id), {
+        confirmAdminAction({
+            header: 'Supprimer l’équipe',
+            message: `Voulez-vous vraiment supprimer l'équipe "${team.name}" ?`,
+            danger: true,
+            onAccept: () => router.delete(route('admin.teams.destroy', team.id), {
                 onSuccess: () => router.visit(route('admin.teams.index')),
-            });
-        }
+            }),
+        });
     };
 
     return (
