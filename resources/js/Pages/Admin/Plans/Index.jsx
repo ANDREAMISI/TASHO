@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import Button from '@/Components/Button';
+import PlanFormDialog from '@/Components/Admin/PlanFormDialog';
+import confirmAdminAction from '@/Components/AdminConfirmDialog';
 import {
     PlusIcon,
     EyeIcon,
@@ -15,32 +18,37 @@ import {
     FolderIcon,
 } from '@/Components/Icons';
 
-export default function PlansIndex({ auth, plans }) {
+export default function PlansIndex({ auth, plans, initialPlan, openCreateForm }) {
     const [showDeleted, setShowDeleted] = useState(false);
+    const [planForm, setPlanForm] = useState(initialPlan || null);
+    const [createOpen, setCreateOpen] = useState(Boolean(openCreateForm));
+
+    useEffect(() => {
+        if (initialPlan) setPlanForm(initialPlan);
+        if (openCreateForm) setCreateOpen(true);
+    }, [initialPlan, openCreateForm]);
 
     const togglePlan = (plan) => {
-        if (confirm(`Voulez-vous ${plan.is_active ? 'désactiver' : 'activer'} le plan "${plan.name}" ?`)) {
-            router.post(route('admin.plans.toggle', plan.id), {}, { preserveScroll: true });
-        }
+        confirmAdminAction({
+            message: `Voulez-vous ${plan.is_active ? 'désactiver' : 'activer'} le plan "${plan.name}" ?`,
+            onAccept: () => router.post(route('admin.plans.toggle', plan.id), {}, { preserveScroll: true }),
+        });
     };
 
     const deletePlan = (plan) => {
-        if (confirm(`Voulez-vous vraiment supprimer le plan "${plan.name}" ?`)) {
-            router.delete(route('admin.plans.destroy', plan.id), {
+        confirmAdminAction({
+            header: 'Supprimer le plan',
+            message: `Voulez-vous vraiment supprimer le plan "${plan.name}" ?`,
+            danger: true,
+            onAccept: () => router.delete(route('admin.plans.destroy', plan.id), {
                 preserveScroll: true,
-            });
-        }
+            }),
+        });
     };
 
-    // ✅ Formatage des prix en Franc Burundais (FBU)
-    const formatPrice = (price) => {
+    const formatPrice = (price, currency) => {
         if (price === 0) return 'Gratuit';
-        return new Intl.NumberFormat('fr-BI', {
-            style: 'currency',
-            currency: 'BIF',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(price);
+        return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(price))} ${currency || 'FBU'}`;
     };
 
     // ✅ Formatage du stockage
@@ -73,13 +81,13 @@ export default function PlansIndex({ auth, plans }) {
                                 Gestion des plans d'abonnement
                             </p>
                         </div>
-                        <Link
-                            href={route('admin.plans.create')}
-                            className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md font-medium hover:bg-tasho-primary/90 transition"
+                        <Button
+                            onClick={() => setCreateOpen(true)}
+                            className="!bg-tasho-primary !border-tasho-primary"
                         >
                             <PlusIcon className="h-4 w-4 mr-2" />
                             Nouveau plan
-                        </Link>
+                        </Button>
                     </div>
 
                     {/* Plans Grid */}
@@ -116,10 +124,10 @@ export default function PlansIndex({ auth, plans }) {
                                             <div className="mt-4 flex items-end justify-between">
                                                 <div>
                                                     <p className="text-3xl font-bold text-tasho-primary">
-                                                        {formatPrice(plan.price_monthly)}
+                                                        {formatPrice(plan.price_monthly, plan.currency)}
                                                     </p>
                                                     <p className="text-xs text-gray-400">
-                                                        {plan.price_yearly > 0 ? formatPrice(plan.price_yearly) + '/an' : ''}
+                                                        {plan.price_yearly > 0 ? formatPrice(plan.price_yearly, plan.currency) + '/an' : ''}
                                                     </p>
                                                 </div>
                                                 {discount > 0 && (
@@ -156,13 +164,14 @@ export default function PlansIndex({ auth, plans }) {
                                                 >
                                                     <EyeIcon className="h-4 w-4" />
                                                 </Link>
-                                                <Link
-                                                    href={route('admin.plans.edit', plan.id)}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPlanForm(plan)}
                                                     className="p-2 text-gray-400 hover:text-gray-600 transition"
                                                     title="Modifier"
                                                 >
                                                     <PencilIcon className="h-4 w-4" />
-                                                </Link>
+                                                </button>
                                                 <button
                                                     onClick={() => togglePlan(plan)}
                                                     className={`p-2 transition ${
@@ -199,19 +208,28 @@ export default function PlansIndex({ auth, plans }) {
                                 </div>
                                 <p className="mt-4 text-gray-500">Aucun plan configuré</p>
                                 <div className="mt-4">
-                                    <Link
-                                        href={route('admin.plans.create')}
-                                        className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md font-medium hover:bg-tasho-primary/90"
+                                    <Button
+                                        onClick={() => setCreateOpen(true)}
+                                        className="!bg-tasho-primary !border-tasho-primary"
                                     >
                                         <PlusIcon className="h-4 w-4 mr-2" />
                                         Créer un plan
-                                    </Link>
+                                    </Button>
                                 </div>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+            <PlanFormDialog
+                key={planForm?.id || 'new'}
+                visible={createOpen || Boolean(planForm)}
+                onHide={() => {
+                    setCreateOpen(false);
+                    setPlanForm(null);
+                }}
+                plan={planForm}
+            />
         </AdminLayout>
     );
 }

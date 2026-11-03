@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import Button from '@/Components/Button';
+import FormDialog from '@/Components/Prime/FormDialog';
 import {
     Cog6ToothIcon,
     GlobeAltIcon,
@@ -12,6 +14,7 @@ import {
 } from '@/Components/Icons';
 
 export default function AdminSettings({ auth }) {
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const { data, setData, put, processing, errors } = useForm({
         site_name: 'TASHO',
         site_email: 'admin@tasho.com',
@@ -25,6 +28,7 @@ export default function AdminSettings({ auth }) {
         e.preventDefault();
         put(route('admin.settings.update'), {
             preserveScroll: true,
+            onSuccess: () => setSettingsOpen(false),
         });
     };
 
@@ -65,6 +69,12 @@ export default function AdminSettings({ auth }) {
                                 Configuration de la plateforme
                             </p>
                         </div>
+                        <Button
+                            onClick={() => setSettingsOpen(true)}
+                            className="!bg-tasho-primary !border-tasho-primary"
+                        >
+                            Modifier les paramètres
+                        </Button>
                     </div>
 
                     {/* Settings Cards */}
@@ -87,10 +97,18 @@ export default function AdminSettings({ auth }) {
                         })}
                     </div>
 
-                    {/* Settings Form */}
-                    <div className="mt-6 bg-white shadow-sm rounded-lg p-6">
-                        <h2 className="text-lg font-medium text-gray-900 mb-6">Configuration générale</h2>
-                        <form onSubmit={submit} className="space-y-6">
+                    <FormDialog
+                        visible={settingsOpen}
+                        onHide={() => setSettingsOpen(false)}
+                        title="Configuration générale"
+                        description="Modifiez les paramètres de la plateforme."
+                        icon="pi pi-cog"
+                        formId="admin-settings-form"
+                        onSubmit={submit}
+                        processing={processing}
+                        width="44rem"
+                    >
+                        <form id="admin-settings-form" onSubmit={submit} className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Nom du site
@@ -167,17 +185,8 @@ export default function AdminSettings({ auth }) {
                                 </p>
                             </div>
 
-                            <div className="flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="px-4 py-2 bg-tasho-primary text-white rounded-md font-medium hover:bg-tasho-primary/90 transition disabled:opacity-50"
-                                >
-                                    {processing ? 'Enregistrement...' : 'Enregistrer'}
-                                </button>
-                            </div>
                         </form>
-                    </div>
+                    </FormDialog>
                 </div>
             </div>
         </AdminLayout>

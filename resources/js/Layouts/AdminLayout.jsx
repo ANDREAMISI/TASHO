@@ -3,7 +3,9 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { Avatar } from 'primereact/avatar';
 import Button from '@/Components/Button';
 import { Sidebar } from 'primereact/sidebar';
+import { ConfirmDialog } from 'primereact/confirmdialog';
 import AppTopbar from '@/Components/AppTopbar';
+import { ToastProvider } from '@/Components/Prime/ToastProvider';
 import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import {
@@ -87,7 +89,9 @@ export default function AdminLayout({ children, user }) {
     ];
 
     return (
+        <ToastProvider>
         <div className="min-h-screen bg-gray-50">
+            <ConfirmDialog />
             <Sidebar
                 key={isDesktop ? 'desktop' : 'mobile'}
                 visible={sidebarVisible}
@@ -185,5 +189,6 @@ export default function AdminLayout({ children, user }) {
                 <main className="p-4 sm:p-6 lg:p-8">{children}</main>
             </div>
         </div>
+        </ToastProvider>
     );
 }
