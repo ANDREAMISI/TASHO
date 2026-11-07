@@ -60,7 +60,7 @@ export default function Login({ status }) {
         show: {
             opacity: 1,
             transition: {
-                delayChildren: 0.5,
+                delayChildren: 0.2,
                 staggerChildren: 0.12,
                 ease: "easeInOut",
             },
@@ -122,13 +122,17 @@ export default function Login({ status }) {
 
                     <motion.div
                         variants={sectionVariants}
-                        className="relative bg-gradient-to-br from-[#f8fbff] via-[#f5f9ff] to-[#edf4ff] p-6 md:p-8 flex flex-col justify-between"
+                        className="relative hidden bg-gradient-to-br from-[#f8fbff] via-[#f5f9ff] to-[#edf4ff] p-6 md:p-8 lg:flex lg:flex-col lg:justify-between"
                     >
                         <motion.div
                             variants={itemVariants}
                             className="flex flex-col items-start gap-4 sm:flex-row sm:items-center md:gap-6"
                         >
-                            <div className="flex shrink-0 flex-col items-center gap-1">
+                            <Link
+                                href="/"
+                                aria-label="Retour à l'accueil"
+                                className="flex shrink-0 flex-col items-center gap-1 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                            >
                                 <img
                                     src="/Images/logo.png"
                                     alt="TASHO"
@@ -137,7 +141,7 @@ export default function Login({ status }) {
                                 <span className="text-xs font-black tracking-[0.14em] text-slate-900">
                                     TASHO
                                 </span>
-                            </div>
+                            </Link>
                             <div>
                                 <h1 className="text-xl md:text-2xl font-extrabold leading-tight">
                                     Vos photos méritent
@@ -274,6 +278,22 @@ export default function Login({ status }) {
                         className="bg-[#071321] flex items-center justify-center px-6 py-8 md:px-10 md:py-10"
                     >
                         <div className="w-full max-w-lg">
+                            {/* Logo mobile : la colonne de gauche est masquée */}
+                            <Link
+                                href="/"
+                                aria-label="Retour à l'accueil"
+                                className="mx-auto mb-6 flex w-fit items-center gap-2.5 rounded-lg px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#071321] lg:hidden"
+                            >
+                                <img
+                                    src="/Images/logo.png"
+                                    alt="TASHO"
+                                    className="h-12 w-12 object-contain"
+                                />
+                                <span className="text-lg font-black tracking-[0.14em] text-white">
+                                    TASHO
+                                </span>
+                            </Link>
+
                             <motion.h2
                                 variants={itemVariants}
                                 className="text-3xl md:text-4xl font-bold text-white text-center mb-8 md:mb-10"

@@ -33,11 +33,19 @@ class AuthenticationTest extends TestCase
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();
+        $failureMessage = trans('auth.failed');
+
+        $this->assertNotSame('auth.failed', $failureMessage);
 
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'wrong-password',
-        ]);
+        ])->assertSessionHasErrors('email');
+
+        $this->assertSame(
+            $failureMessage,
+            session('errors')->getBag('default')->first('email'),
+        );
 
         $this->assertGuest();
     }

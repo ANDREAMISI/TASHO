@@ -7,6 +7,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { PrimeReactProvider } from 'primereact/api';
 import { createRoot } from 'react-dom/client';
+import GlobalPageLoader from '@/Components/GlobalPageLoader';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -23,10 +24,9 @@ createInertiaApp({
         root.render(
             <PrimeReactProvider>
                 <App {...props} />
+                <GlobalPageLoader />
             </PrimeReactProvider>,
         );
     },
-    progress: {
-        color: '#4B5563',
-    },
+    progress: false,
 });
