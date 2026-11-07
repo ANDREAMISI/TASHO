@@ -15,7 +15,6 @@ import {
     PaperAirplaneIcon,
     PhotoIcon,
     PlayIcon,
-    SparklesIcon,
     UserIcon,
     VideoCameraIcon,
     XMarkIcon,
@@ -56,7 +55,7 @@ function CommentAvatar({ name }) {
         .toUpperCase();
 
     return (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-tasho-primary/15 to-sky-100 text-xs font-semibold text-tasho-primary ring-1 ring-tasho-primary/10">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tasho-primary/15 text-xs font-semibold text-tasho-primary ring-1 ring-tasho-primary/10">
             {initials || '?'}
         </span>
     );
@@ -312,14 +311,14 @@ export default function GalleryShow({ access, project, files, folders, permissio
 
         if (file.is_video) {
             return (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-50 to-violet-100 text-violet-500">
+                <div className="flex h-full w-full items-center justify-center bg-violet-50 text-violet-500">
                     <VideoCameraIcon className="h-12 w-12" />
                 </div>
             );
         }
 
         return (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 text-orange-400">
+            <div className="flex h-full w-full items-center justify-center bg-orange-50 text-orange-400">
                 <DocumentIcon className="h-12 w-12" />
             </div>
         );
@@ -562,17 +561,10 @@ export default function GalleryShow({ access, project, files, folders, permissio
 
                 <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {/* Hero */}
-                    <section className="relative mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1B9CD8] via-[#1583B8] to-[#2D3436] px-5 py-6 shadow-xl shadow-tasho-primary/10 sm:px-8 sm:py-8">
-                        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-                        <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-tasho-accent/20 blur-3xl" />
-
+                    <section className="relative mt-6 overflow-hidden rounded-3xl bg-[#1583B8] px-5 py-6 shadow-xl shadow-tasho-primary/10 sm:px-8 sm:py-8">
                         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                             <div className="max-w-2xl text-white">
-                                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-white/80 ring-1 ring-white/15">
-                                    <SparklesIcon className="h-3.5 w-3.5" />
-                                    Collection partagée
-                                </div>
-                                <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+                                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
                                     {project.title}
                                 </h2>
                                 {project.description && (

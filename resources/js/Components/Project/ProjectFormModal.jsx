@@ -335,7 +335,7 @@ export default function ProjectFormModal({
                                             onChange={(event) =>
                                                 setData('client_name', event.target.value)
                                             }
-                                            placeholder="Ex : Sarah Dupont"
+                                            placeholder="Ex : Sarah Martin"
                                         />
                                     </FormField>
 

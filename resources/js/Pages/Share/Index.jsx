@@ -363,7 +363,7 @@ export default function ShareIndex({ auth, projects, selectedProject, accesses =
                                 onChange={(event) =>
                                     setData('client_name', event.target.value)
                                 }
-                                placeholder="Ex : Sarah Dupont"
+                                placeholder="Ex : Sarah Martin"
                                 className={errors.client_name ? 'p-invalid' : ''}
                             />
                         </FormField>
