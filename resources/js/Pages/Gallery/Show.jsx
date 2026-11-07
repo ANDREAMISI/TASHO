@@ -151,6 +151,24 @@ export default function GalleryShow({ access, project, files, folders, permissio
         setRotation(0);
     };
 
+    // PrimeReact 10 (Galleria) ne gère pas la prop `closeOnEscape` :
+    // on ferme la galerie nous-mêmes avec la touche Échap.
+    useEffect(() => {
+        if (!galleryOpen) {
+            return undefined;
+        }
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                closeGallery();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [galleryOpen]);
+
     const handleItemChange = (event) => {
         setActiveIndex(event.index ?? 0);
         setZoom(MIN_ZOOM);
@@ -310,12 +328,12 @@ export default function GalleryShow({ access, project, files, folders, permissio
     const renderGalleryItem = (file) => {
         if (file.is_image) {
             return (
-                <div className="flex h-full w-full items-center justify-center overflow-hidden p-2">
+                <div className="flex h-full w-full items-center justify-center overflow-hidden p-2 sm:p-4">
                     <img
                         src={fileUrl(file)}
                         alt={file.original_name}
                         draggable={false}
-                        className="max-h-[72vh] max-w-full object-contain transition-transform duration-200"
+                        className="max-h-full max-w-full object-contain transition-transform duration-200"
                         style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
                     />
                 </div>
@@ -324,13 +342,13 @@ export default function GalleryShow({ access, project, files, folders, permissio
 
         if (file.is_video) {
             return (
-                <div className="flex h-full w-full items-center justify-center p-2">
+                <div className="flex h-full w-full items-center justify-center p-2 sm:p-4">
                     <video
                         key={file.id}
                         src={fileUrl(file)}
                         controls
                         playsInline
-                        className="max-h-[72vh] max-w-full rounded-lg bg-black"
+                        className="max-h-full max-w-full rounded-lg bg-black"
                     />
                 </div>
             );
@@ -938,7 +956,6 @@ export default function GalleryShow({ access, project, files, folders, permissio
                     onItemChange={handleItemChange}
                     onHide={closeGallery}
                     fullScreen
-                    closeOnEscape
                     circular={filteredFiles.length > 1}
                     showThumbnails
                     showItemNavigators
