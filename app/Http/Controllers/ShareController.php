@@ -6,15 +6,19 @@ use App\Models\Client;
 use App\Models\File;
 use App\Models\Project;
 use App\Models\ProjectAccess;
+use App\Support\FileCategory;
 use App\Services\AuditService;
 use App\Services\NotificationService;
 use App\Services\ShareService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use ZipStream\CompressionMethod;
+use ZipStream\ZipStream;
 
 class ShareController extends Controller
 {
@@ -519,6 +523,154 @@ class ShareController extends Controller
         }
 
         return Storage::disk($file->disk)->download($file->path, $file->original_name);
+    }
+
+    /**
+     * Télécharger plusieurs fichiers de la galerie dans une archive ZIP.
+     *
+     * Options : `type` = all|images|videos|documents, et `ids` (liste
+     * séparée par des virgules) pour ne télécharger que la sélection.
+     */
+    public function downloadFiles(Request $request, $token)
+    {
+        $access = ProjectAccess::where('access_token', $token)->firstOrFail();
+
+        $this->ensureGalleryAccess($access);
+
+        if (! $access->can_download) {
+            abort(403, 'Le téléchargement est désactivé pour cette galerie.');
+        }
+
+        $type = (string) $request->query('type', 'all');
+        $allowedTypes = ['all', FileCategory::IMAGES, FileCategory::VIDEOS, FileCategory::DOCUMENTS];
+
+        if (! in_array($type, $allowedTypes, true)) {
+            abort(422, 'Type de téléchargement invalide.');
+        }
+
+        $ids = collect($request->query('ids', []))
+            ->flatMap(fn ($value) => explode(',', (string) $value))
+            ->map(fn ($value) => (int) $value)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $query = $access->project->files();
+
+        // Respecter les dossiers autorisés sur le lien de partage.
+        if ($access->allowed_folders) {
+            $query->whereIn('folder_id', $access->allowed_folders);
+        }
+
+        if ($type !== 'all') {
+            $query->ofCategory($type);
+        }
+
+        if ($ids->isNotEmpty()) {
+            $query->whereIn('id', $ids);
+        }
+
+        $files = $query->orderBy('id')->get();
+
+        if ($files->isEmpty()) {
+            abort(404, 'Aucun fichier à télécharger.');
+        }
+
+        // Compteurs de téléchargement (une seule requête pour toute l'archive).
+        $fileIds = $files->pluck('id');
+        File::whereIn('id', $fileIds)->increment('download_count');
+        File::whereIn('id', $fileIds)->update(['last_accessed_at' => now()]);
+
+        // Une seule notification par lien de partage.
+        if ($access->first_downloaded_at === null) {
+            $access->update(['first_downloaded_at' => now()]);
+            $this->notifications->shareDownloaded($access, $files->first());
+        }
+
+        $suffix = $ids->isNotEmpty()
+            ? 'selection'
+            : ($type === 'all' ? 'galerie' : $type);
+        $slug = Str::slug($access->project->title ?: 'galerie');
+        $archiveName = ($slug !== '' ? $slug : 'galerie') . '-' . $suffix . '.zip';
+
+        return response()->streamDownload(function () use ($files) {
+            // ZipStream écrit directement dans le flux : aucune archive
+            // temporaire n'est créée sur le serveur.
+            $zip = new ZipStream(sendHttpHeaders: false);
+            $usedNames = [];
+
+            foreach ($files as $file) {
+                try {
+                    $stream = Storage::disk($file->disk)->readStream($file->path);
+                } catch (\Throwable) {
+                    // Un fichier manquant ne doit pas casser toute l'archive.
+                    continue;
+                }
+
+                if ($stream === false || $stream === null) {
+                    continue;
+                }
+
+                $entryName = $this->uniqueArchiveName((string) $file->original_name, $usedNames);
+
+                // Les médias sont déjà compressés : on les stocke tels quels.
+                $compression = $file->isImage() || $file->isVideo()
+                    ? CompressionMethod::STORE
+                    : CompressionMethod::DEFLATE;
+
+                $zip->addFileFromStream(
+                    fileName: $entryName,
+                    stream: $stream,
+                    compressionMethod: $compression,
+                    lastModificationDateTime: $file->updated_at,
+                );
+
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
+
+            $zip->finish();
+        }, $archiveName, [
+            'Content-Type' => 'application/x-zip',
+        ]);
+    }
+
+    /**
+     * Génère un nom d'entrée unique dans l'archive (les doublons sont
+     * suffixés « (2) », « (3) », …).
+     */
+    private function uniqueArchiveName(string $name, array &$used): string
+    {
+        $name = trim(str_replace(['/', '\\'], '-', $name));
+
+        if ($name === '') {
+            $name = 'fichier';
+        }
+
+        $key = mb_strtolower($name);
+
+        if (! isset($used[$key])) {
+            $used[$key] = 1;
+
+            return $name;
+        }
+
+        $info = pathinfo($name);
+        $base = $info['filename'] !== '' ? $info['filename'] : 'fichier';
+        $extension = isset($info['extension']) && $info['extension'] !== ''
+            ? '.' . $info['extension']
+            : '';
+
+        do {
+            $used[$key]++;
+            $candidate = $base . ' (' . $used[$key] . ')' . $extension;
+            $candidateKey = mb_strtolower($candidate);
+        } while (isset($used[$candidateKey]));
+
+        $used[$candidateKey] = 1;
+
+        return $candidate;
     }
 
     /**

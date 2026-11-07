@@ -15,7 +15,6 @@ import {
     PaperAirplaneIcon,
     PhotoIcon,
     PlayIcon,
-    SparklesIcon,
     UserIcon,
     VideoCameraIcon,
     XMarkIcon,
@@ -56,7 +55,7 @@ function CommentAvatar({ name }) {
         .toUpperCase();
 
     return (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-tasho-primary/15 to-sky-100 text-xs font-semibold text-tasho-primary ring-1 ring-tasho-primary/10">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tasho-primary/15 text-xs font-semibold text-tasho-primary ring-1 ring-tasho-primary/10">
             {initials || '?'}
         </span>
     );
@@ -74,10 +73,17 @@ export default function GalleryShow({ access, project, files, folders, permissio
     const [commentsLoading, setCommentsLoading] = useState(true);
     const [favorites, setFavorites] = useState([]);
     const [copyState, setCopyState] = useState(false);
+    const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
+    const [downloadMenuOpenUp, setDownloadMenuOpenUp] = useState(false);
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedFileIds, setSelectedFileIds] = useState([]);
+    const [preparingDownload, setPreparingDownload] = useState(null);
     const [commentForm, setCommentForm] = useState({ name: '', email: '', content: '' });
     const [commentError, setCommentError] = useState('');
     const [submittingComment, setSubmittingComment] = useState(false);
     const galleriaRef = useRef(null);
+    const downloadMenuRef = useRef(null);
+    const downloadButtonRef = useRef(null);
 
     const galleryFiles = useMemo(() => files || [], [files]);
     const galleryFolders = useMemo(() => folders || [], [folders]);
@@ -100,6 +106,16 @@ export default function GalleryShow({ access, project, files, folders, permissio
         });
         return counts;
     }, [galleryFiles]);
+
+    const downloadCounts = useMemo(
+        () => ({
+            all: galleryFiles.length,
+            images: galleryFiles.filter((file) => file.is_image).length,
+            videos: galleryFiles.filter((file) => file.is_video).length,
+            documents: galleryFiles.filter((file) => file.is_document).length,
+        }),
+        [galleryFiles],
+    );
 
     const currentFile = filteredFiles[activeIndex] ?? null;
     const hasActiveFilters = searchTerm !== '' || selectedFolderId !== 'all';
@@ -150,6 +166,51 @@ export default function GalleryShow({ access, project, files, folders, permissio
         setZoom(MIN_ZOOM);
         setRotation(0);
     };
+
+    // PrimeReact 10 (Galleria) ne gère pas la prop `closeOnEscape` :
+    // on ferme la galerie nous-mêmes avec la touche Échap.
+    useEffect(() => {
+        if (!galleryOpen) {
+            return undefined;
+        }
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                closeGallery();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [galleryOpen]);
+
+    // Fermer le menu de téléchargement au clic extérieur ou avec Échap.
+    useEffect(() => {
+        if (!downloadMenuOpen) {
+            return undefined;
+        }
+
+        const handlePointerDown = (event) => {
+            if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target)) {
+                setDownloadMenuOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setDownloadMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [downloadMenuOpen]);
 
     const handleItemChange = (event) => {
         setActiveIndex(event.index ?? 0);
@@ -263,12 +324,100 @@ export default function GalleryShow({ access, project, files, folders, permissio
         window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     };
 
-    const downloadFile = (file) => {
+    // Déclenche un téléchargement via un lien temporaire : le navigateur
+    // gère l'en-tête Content-Disposition sans ouvrir d'onglet vide.
+    const startDownload = (url, stateKey = null) => {
         if (!permissions.can_download) {
             return;
         }
 
-        window.open(downloadUrl(file), '_blank');
+        if (stateKey) {
+            setPreparingDownload(stateKey);
+            window.setTimeout(() => {
+                setPreparingDownload((current) => (current === stateKey ? null : current));
+            }, 4000);
+        }
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    };
+
+    const downloadFile = (file) => {
+        startDownload(downloadUrl(file));
+    };
+
+    const toggleDownloadMenu = () => {
+        if (!downloadMenuOpen && downloadButtonRef.current) {
+            const rect = downloadButtonRef.current.getBoundingClientRect();
+
+            // Ouvrir vers le haut quand l'espace sous le bouton manque.
+            setDownloadMenuOpenUp(window.innerHeight - rect.bottom < 380);
+        }
+
+        setDownloadMenuOpen(!downloadMenuOpen);
+    };
+
+    const downloadArchive = (type) => {
+        setDownloadMenuOpen(false);
+        if (type !== 'all' && downloadCounts[type] === 0) {
+            return;
+        }
+
+        startDownload(
+            `/gallery/${access.access_token}/download?type=${encodeURIComponent(type)}`,
+            type,
+        );
+    };
+
+    const downloadSelection = () => {
+        if (selectedFileIds.length === 0) {
+            return;
+        }
+
+        setDownloadMenuOpen(false);
+        startDownload(
+            `/gallery/${access.access_token}/download?ids=${selectedFileIds.join(',')}`,
+            'selection',
+        );
+    };
+
+    const toggleSelectionMode = () => {
+        setDownloadMenuOpen(false);
+
+        if (selectionMode) {
+            setSelectedFileIds([]);
+        }
+
+        setSelectionMode(!selectionMode);
+    };
+
+    const toggleFileSelection = (fileId) => {
+        setSelectedFileIds((previous) =>
+            previous.includes(fileId)
+                ? previous.filter((id) => id !== fileId)
+                : [...previous, fileId],
+        );
+    };
+
+    const allVisibleSelected =
+        filteredFiles.length > 0 &&
+        filteredFiles.every((file) => selectedFileIds.includes(file.id));
+
+    const toggleSelectAll = () => {
+        if (allVisibleSelected) {
+            const visibleIds = new Set(filteredFiles.map((file) => file.id));
+            setSelectedFileIds((previous) => previous.filter((id) => !visibleIds.has(id)));
+
+            return;
+        }
+
+        setSelectedFileIds((previous) =>
+            Array.from(new Set([...previous, ...filteredFiles.map((file) => file.id)])),
+        );
     };
 
     const getFolderName = (id) => {
@@ -294,14 +443,14 @@ export default function GalleryShow({ access, project, files, folders, permissio
 
         if (file.is_video) {
             return (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-50 to-violet-100 text-violet-500">
+                <div className="flex h-full w-full items-center justify-center bg-violet-50 text-violet-500">
                     <VideoCameraIcon className="h-12 w-12" />
                 </div>
             );
         }
 
         return (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 text-orange-400">
+            <div className="flex h-full w-full items-center justify-center bg-orange-50 text-orange-400">
                 <DocumentIcon className="h-12 w-12" />
             </div>
         );
@@ -310,12 +459,12 @@ export default function GalleryShow({ access, project, files, folders, permissio
     const renderGalleryItem = (file) => {
         if (file.is_image) {
             return (
-                <div className="flex h-full w-full items-center justify-center overflow-hidden p-2">
+                <div className="flex h-full w-full items-center justify-center overflow-hidden p-2 sm:p-4">
                     <img
                         src={fileUrl(file)}
                         alt={file.original_name}
                         draggable={false}
-                        className="max-h-[72vh] max-w-full object-contain transition-transform duration-200"
+                        className="max-h-full max-w-full object-contain transition-transform duration-200"
                         style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
                     />
                 </div>
@@ -324,13 +473,13 @@ export default function GalleryShow({ access, project, files, folders, permissio
 
         if (file.is_video) {
             return (
-                <div className="flex h-full w-full items-center justify-center p-2">
+                <div className="flex h-full w-full items-center justify-center p-2 sm:p-4">
                     <video
                         key={file.id}
                         src={fileUrl(file)}
                         controls
                         playsInline
-                        className="max-h-[72vh] max-w-full rounded-lg bg-black"
+                        className="max-h-full max-w-full rounded-lg bg-black"
                     />
                 </div>
             );
@@ -469,7 +618,7 @@ export default function GalleryShow({ access, project, files, folders, permissio
         <>
             <Head title={project.title} />
 
-            <div className="min-h-screen bg-slate-50 pb-16">
+            <div className={`min-h-screen bg-slate-50 ${selectionMode ? 'pb-32' : 'pb-16'}`}>
                 {/* En-tête */}
                 <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-md">
                     <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
@@ -544,17 +693,10 @@ export default function GalleryShow({ access, project, files, folders, permissio
 
                 <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {/* Hero */}
-                    <section className="relative mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1B9CD8] via-[#1583B8] to-[#2D3436] px-5 py-6 shadow-xl shadow-tasho-primary/10 sm:px-8 sm:py-8">
-                        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-                        <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-tasho-accent/20 blur-3xl" />
-
+                    <section className="relative mt-6 overflow-hidden rounded-3xl bg-[#1583B8] px-5 py-6 shadow-xl shadow-tasho-primary/10 sm:px-8 sm:py-8">
                         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                             <div className="max-w-2xl text-white">
-                                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-white/80 ring-1 ring-white/15">
-                                    <SparklesIcon className="h-3.5 w-3.5" />
-                                    Collection partagée
-                                </div>
-                                <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+                                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
                                     {project.title}
                                 </h2>
                                 {project.description && (
@@ -674,20 +816,190 @@ export default function GalleryShow({ access, project, files, folders, permissio
                         </div>
                     </div>
 
-                    <div className="mt-6 flex items-center justify-between text-xs text-slate-500">
-                        <span>
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                        <span className="text-xs text-slate-500">
                             {filteredFiles.length} fichier{filteredFiles.length > 1 ? 's' : ''}
                             {selectedFolderId !== 'all' && ` · ${getFolderName(Number(selectedFolderId))}`}
                         </span>
-                        {hasActiveFilters && (
-                            <button
-                                type="button"
-                                onClick={resetFilters}
-                                className="font-medium text-tasho-primary transition hover:text-tasho-primary/80"
-                            >
-                                Réinitialiser les filtres
-                            </button>
-                        )}
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            {hasActiveFilters && (
+                                <button
+                                    type="button"
+                                    onClick={resetFilters}
+                                    className="text-xs font-medium text-tasho-primary transition hover:text-tasho-primary/80"
+                                >
+                                    Réinitialiser les filtres
+                                </button>
+                            )}
+
+                            {permissions.can_download && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={toggleSelectionMode}
+                                        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                                            selectionMode
+                                                ? 'border-tasho-primary bg-tasho-primary text-white shadow-sm shadow-tasho-primary/30 hover:bg-tasho-primary/90'
+                                                : 'border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        <CheckIcon className="h-3.5 w-3.5" />
+                                        {selectionMode ? 'Terminer' : 'Sélectionner'}
+                                    </button>
+
+                                    <div ref={downloadMenuRef} className="relative">
+                                        <button
+                                            type="button"
+                                            ref={downloadButtonRef}
+                                            onClick={toggleDownloadMenu}
+                                            aria-haspopup="menu"
+                                            aria-expanded={downloadMenuOpen}
+                                            className="inline-flex items-center gap-1.5 rounded-xl bg-tasho-primary px-3.5 py-2 text-xs font-semibold text-white shadow-sm shadow-tasho-primary/30 transition hover:bg-tasho-primary/90"
+                                        >
+                                            {preparingDownload ? (
+                                                <i className="pi pi-spin pi-spinner text-xs" />
+                                            ) : (
+                                                <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+                                            )}
+                                            {preparingDownload ? 'Préparation…' : 'Télécharger'}
+                                            <i
+                                                className={`pi text-[10px] ${
+                                                    downloadMenuOpen
+                                                        ? 'pi-chevron-up'
+                                                        : 'pi-chevron-down'
+                                                }`}
+                                            />
+                                        </button>
+
+                                        {downloadMenuOpen && (
+                                            <div
+                                                role="menu"
+                                                style={{
+                                                    maxHeight: 'min(24rem, calc(100vh - 8rem))',
+                                                }}
+                                                className={`absolute right-0 z-30 w-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl shadow-slate-900/10 ${
+                                                    downloadMenuOpenUp
+                                                        ? 'bottom-full mb-2'
+                                                        : 'top-full mt-2'
+                                                }`}
+                                            >
+                                                <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                                    Télécharger
+                                                </p>
+
+                                                {[
+                                                    {
+                                                        key: 'all',
+                                                        label: 'Tout télécharger',
+                                                        description: `${downloadCounts.all} fichier${downloadCounts.all > 1 ? 's' : ''} au total`,
+                                                        icon: ArrowDownTrayIcon,
+                                                        tone: 'bg-tasho-primary/10 text-tasho-primary',
+                                                    },
+                                                    {
+                                                        key: 'images',
+                                                        label: 'Photos uniquement',
+                                                        description: `${downloadCounts.images} photo${downloadCounts.images > 1 ? 's' : ''}`,
+                                                        icon: PhotoIcon,
+                                                        tone: 'bg-emerald-50 text-emerald-600',
+                                                    },
+                                                    {
+                                                        key: 'videos',
+                                                        label: 'Vidéos uniquement',
+                                                        description: `${downloadCounts.videos} vidéo${downloadCounts.videos > 1 ? 's' : ''}`,
+                                                        icon: VideoCameraIcon,
+                                                        tone: 'bg-violet-50 text-violet-600',
+                                                    },
+                                                    {
+                                                        key: 'documents',
+                                                        label: 'Documents uniquement',
+                                                        description: `${downloadCounts.documents} document${downloadCounts.documents > 1 ? 's' : ''}`,
+                                                        icon: DocumentIcon,
+                                                        tone: 'bg-orange-50 text-orange-500',
+                                                    },
+                                                ].map((option) => (
+                                                    <button
+                                                        key={option.key}
+                                                        type="button"
+                                                        role="menuitem"
+                                                        disabled={downloadCounts[option.key] === 0}
+                                                        onClick={() => downloadArchive(option.key)}
+                                                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    >
+                                                        <span
+                                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${option.tone}`}
+                                                        >
+                                                            <option.icon className="h-4 w-4" />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block text-sm font-medium text-slate-700">
+                                                                {option.label}
+                                                            </span>
+                                                            <span className="block text-[11px] text-slate-400">
+                                                                {option.description}
+                                                            </span>
+                                                        </span>
+                                                        {preparingDownload === option.key && (
+                                                            <i className="pi pi-spin pi-spinner text-xs text-tasho-primary" />
+                                                        )}
+                                                    </button>
+                                                ))}
+
+                                                {selectedFileIds.length > 0 && (
+                                                    <div className="my-1 border-t border-slate-100 pt-1">
+                                                        <button
+                                                            type="button"
+                                                            role="menuitem"
+                                                            onClick={downloadSelection}
+                                                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-50"
+                                                        >
+                                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
+                                                                <CheckIcon className="h-4 w-4" />
+                                                            </span>
+                                                            <span className="min-w-0 flex-1">
+                                                                <span className="block text-sm font-medium text-slate-700">
+                                                                    Télécharger la sélection
+                                                                </span>
+                                                                <span className="block text-[11px] text-slate-400">
+                                                                    {selectedFileIds.length} fichier
+                                                                    {selectedFileIds.length > 1 ? 's' : ''}{' '}
+                                                                    sélectionné
+                                                                    {selectedFileIds.length > 1 ? 's' : ''}
+                                                                </span>
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                <div className="my-1 border-t border-slate-100 pt-1">
+                                                    <button
+                                                        type="button"
+                                                        role="menuitem"
+                                                        onClick={toggleSelectionMode}
+                                                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-50"
+                                                    >
+                                                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                                                            <CheckIcon className="h-4 w-4" />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block text-sm font-medium text-slate-700">
+                                                                {selectionMode
+                                                                    ? 'Quitter la sélection'
+                                                                    : 'Choisir des fichiers'}
+                                                            </span>
+                                                            <span className="block text-[11px] text-slate-400">
+                                                                Télécharger un ou plusieurs fichiers
+                                                                précis
+                                                            </span>
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     {/* Grille */}
@@ -696,22 +1008,45 @@ export default function GalleryShow({ access, project, files, folders, permissio
                             {filteredFiles.map((file, index) => (
                                 <article
                                     key={file.id}
-                                    className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-tasho-primary/30 hover:shadow-xl hover:shadow-slate-900/5 focus-within:ring-2 focus-within:ring-tasho-primary"
+                                    className={`group relative overflow-hidden rounded-2xl border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/5 focus-within:ring-2 focus-within:ring-tasho-primary ${
+                                        selectedFileIds.includes(file.id)
+                                            ? 'border-tasho-primary ring-2 ring-tasho-primary/60'
+                                            : 'border-slate-200 hover:border-tasho-primary/30'
+                                    }`}
                                 >
                                     <button
                                         type="button"
-                                        onClick={() => openGallery(index)}
-                                        aria-label={`Ouvrir ${file.original_name}`}
+                                        onClick={() =>
+                                            selectionMode
+                                                ? toggleFileSelection(file.id)
+                                                : openGallery(index)
+                                        }
+                                        aria-label={
+                                            selectionMode
+                                                ? `${
+                                                      selectedFileIds.includes(file.id)
+                                                          ? 'Retirer'
+                                                          : 'Sélectionner'
+                                                  } ${file.original_name}`
+                                                : `Ouvrir ${file.original_name}`
+                                        }
+                                        aria-pressed={
+                                            selectionMode
+                                                ? selectedFileIds.includes(file.id)
+                                                : undefined
+                                        }
                                         className="block w-full text-left focus:outline-none"
                                     >
                                         <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                                             {renderGridPreview(file)}
 
-                                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-900/0 transition duration-300 group-hover:bg-slate-900/20">
-                                                <span className="flex h-10 w-10 scale-75 items-center justify-center rounded-full bg-white/90 text-slate-700 opacity-0 shadow-lg transition duration-300 group-hover:scale-100 group-hover:opacity-100">
-                                                    <MagnifyingGlassIcon className="h-4 w-4" />
+                                            {!selectionMode && (
+                                                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-900/0 transition duration-300 group-hover:bg-slate-900/20">
+                                                    <span className="flex h-10 w-10 scale-75 items-center justify-center rounded-full bg-white/90 text-slate-700 opacity-0 shadow-lg transition duration-300 group-hover:scale-100 group-hover:opacity-100">
+                                                        <MagnifyingGlassIcon className="h-4 w-4" />
+                                                    </span>
                                                 </span>
-                                            </span>
+                                            )}
 
                                             {file.is_video && (
                                                 <span className="absolute left-2 top-2 rounded-full bg-black/60 p-1.5 text-white backdrop-blur-sm">
@@ -722,6 +1057,18 @@ export default function GalleryShow({ access, project, files, folders, permissio
                                             {file.is_document && (
                                                 <span className="absolute left-2 top-2 rounded-full bg-black/60 p-1.5 text-white backdrop-blur-sm">
                                                     <DocumentIcon className="h-3.5 w-3.5" />
+                                                </span>
+                                            )}
+
+                                            {selectionMode && (
+                                                <span
+                                                    className={`absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-sm transition ${
+                                                        selectedFileIds.includes(file.id)
+                                                            ? 'border-tasho-primary bg-tasho-primary text-white'
+                                                            : 'border-white bg-white/85 text-transparent'
+                                                    }`}
+                                                >
+                                                    <CheckIcon className="h-4 w-4" />
                                                 </span>
                                             )}
                                         </div>
@@ -747,23 +1094,40 @@ export default function GalleryShow({ access, project, files, folders, permissio
                                         </div>
                                     </button>
 
-                                    {permissions.can_favorite && (
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleFavorite(file.id)}
-                                            title="Ajouter aux favoris"
-                                            aria-label="Ajouter aux favoris"
-                                            className="absolute right-2 top-2 z-10 rounded-full bg-white/90 p-1.5 text-slate-500 shadow-sm backdrop-blur-sm transition hover:bg-white hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
-                                        >
-                                            <HeartIcon
-                                                className={`h-4 w-4 ${
-                                                    favorites.includes(file.id)
-                                                        ? 'fill-current text-red-500'
-                                                        : ''
-                                                }`}
-                                            />
-                                        </button>
-                                    )}
+                                    {!selectionMode &&
+                                        (permissions.can_download || permissions.can_favorite) && (
+                                            <div className="absolute right-2 top-2 z-10 flex flex-col gap-1.5 sm:opacity-0 sm:transition sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+                                                {permissions.can_favorite && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleFavorite(file.id)}
+                                                        title="Ajouter aux favoris"
+                                                        aria-label="Ajouter aux favoris"
+                                                        className="rounded-full bg-white/90 p-1.5 text-slate-500 shadow-sm backdrop-blur-sm transition hover:bg-white hover:text-red-500"
+                                                    >
+                                                        <HeartIcon
+                                                            className={`h-4 w-4 ${
+                                                                favorites.includes(file.id)
+                                                                    ? 'fill-current text-red-500'
+                                                                    : ''
+                                                            }`}
+                                                        />
+                                                    </button>
+                                                )}
+
+                                                {permissions.can_download && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => downloadFile(file)}
+                                                        title="Télécharger ce fichier"
+                                                        aria-label={`Télécharger ${file.original_name}`}
+                                                        className="rounded-full bg-white/90 p-1.5 text-slate-500 shadow-sm backdrop-blur-sm transition hover:bg-white hover:text-tasho-primary"
+                                                    >
+                                                        <ArrowDownTrayIcon className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                 </article>
                             ))}
                         </div>
@@ -938,7 +1302,6 @@ export default function GalleryShow({ access, project, files, folders, permissio
                     onItemChange={handleItemChange}
                     onHide={closeGallery}
                     fullScreen
-                    closeOnEscape
                     circular={filteredFiles.length > 1}
                     showThumbnails
                     showItemNavigators
@@ -950,6 +1313,75 @@ export default function GalleryShow({ access, project, files, folders, permissio
                     caption={renderGalleryCaption}
                     header={galleryHeader}
                 />
+            )}
+
+            {selectionMode && (
+                <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
+                    <div className="flex w-full max-w-2xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-2xl shadow-slate-900/15 backdrop-blur">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tasho-primary/10 text-sm font-semibold text-tasho-primary">
+                                {selectedFileIds.length}
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-900">
+                                    Sélection
+                                </p>
+                                <p className="truncate text-[11px] text-slate-500">
+                                    {selectedFileIds.length > 0
+                                        ? `${selectedFileIds.length} fichier${
+                                              selectedFileIds.length > 1 ? 's' : ''
+                                          } sélectionné${selectedFileIds.length > 1 ? 's' : ''}`
+                                        : 'Cliquez sur les fichiers à télécharger'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={toggleSelectAll}
+                                disabled={filteredFiles.length === 0}
+                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {allVisibleSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={downloadSelection}
+                                disabled={selectedFileIds.length === 0 || Boolean(preparingDownload)}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-tasho-primary px-3.5 py-2 text-xs font-semibold text-white shadow-sm shadow-tasho-primary/30 transition hover:bg-tasho-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {preparingDownload === 'selection' ? (
+                                    <i className="pi pi-spin pi-spinner text-xs" />
+                                ) : (
+                                    <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+                                )}
+                                Télécharger
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={toggleSelectionMode}
+                                title="Quitter la sélection"
+                                aria-label="Quitter la sélection"
+                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            >
+                                <XMarkIcon className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {preparingDownload && (
+                <div
+                    role="status"
+                    className="fixed right-4 top-20 z-50 flex items-center gap-2.5 rounded-xl bg-slate-900/95 px-4 py-3 text-sm text-white shadow-lg shadow-slate-900/30 backdrop-blur"
+                >
+                    <i className="pi pi-spin pi-spinner text-xs" />
+                    Préparation de l’archive…
+                </div>
             )}
         </>
     );

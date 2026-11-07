@@ -100,7 +100,7 @@ export default function ClientFormModal({ visible, onHide, client = null }) {
                             id="client-name"
                             value={data.name}
                             onChange={(event) => setData('name', event.target.value)}
-                            placeholder="Ex : Sarah Dupont"
+                            placeholder="Ex : Sarah Martin"
                             className={errors.name ? 'p-invalid' : ''}
                             autoFocus
                         />

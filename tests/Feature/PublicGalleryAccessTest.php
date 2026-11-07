@@ -103,6 +103,63 @@ class PublicGalleryAccessTest extends TestCase
     $response->assertStatus(403);
   }
 
+  public function test_bulk_download_is_blocked_when_downloads_are_disabled(): void
+  {
+    [, , , $access] = $this->makeGallery(['can_download' => false]);
+
+    $this->get('/gallery/' . $access->access_token . '/download?type=all')
+      ->assertStatus(403);
+  }
+
+  public function test_bulk_download_filters_files_by_type(): void
+  {
+    Storage::fake('local');
+
+    [, , $project, $access] = $this->makeGallery();
+
+    $this->makeStoredFile($project, 'photo.jpg', 'image/jpeg', 'jpg', 'image-bytes');
+    $this->makeStoredFile($project, 'clip.mp4', 'video/mp4', 'mp4', 'video-bytes');
+    $this->makeStoredFile($project, 'report.pdf', 'application/pdf', 'pdf', 'pdf-bytes');
+
+    $response = $this->get('/gallery/' . $access->access_token . '/download?type=images');
+
+    $response->assertOk();
+    $response->assertHeader('content-type', 'application/x-zip');
+    $this->assertStringContainsString('-images.zip', $response->headers->get('content-disposition'));
+
+    $archive = $response->streamedContent();
+
+    $this->assertStringContainsString('photo.jpg', $archive);
+    $this->assertStringNotContainsString('clip.mp4', $archive);
+    $this->assertStringNotContainsString('report.pdf', $archive);
+  }
+
+  public function test_bulk_download_can_target_selected_files(): void
+  {
+    Storage::fake('local');
+
+    [, , $project, $access] = $this->makeGallery();
+
+    $image = $this->makeStoredFile($project, 'photo.jpg', 'image/jpeg', 'jpg', 'image-bytes');
+    $video = $this->makeStoredFile($project, 'clip.mp4', 'video/mp4', 'mp4', 'video-bytes');
+    $this->makeStoredFile($project, 'report.pdf', 'application/pdf', 'pdf', 'pdf-bytes');
+
+    $response = $this->get(
+      '/gallery/' . $access->access_token . '/download?ids=' . $image->id . ',' . $video->id
+    );
+
+    $response->assertOk();
+
+    $archive = $response->streamedContent();
+
+    $this->assertStringContainsString('photo.jpg', $archive);
+    $this->assertStringContainsString('clip.mp4', $archive);
+    $this->assertStringNotContainsString('report.pdf', $archive);
+    $this->assertSame(1, $image->fresh()->download_count);
+    $this->assertSame(1, $video->fresh()->download_count);
+    $this->assertNotNull($access->fresh()->first_downloaded_at);
+  }
+
   public function test_expired_gallery_renders_expired_page_without_counting_a_view(): void
   {
     [, , , $access] = $this->makeGallery([
@@ -339,8 +396,34 @@ class PublicGalleryAccessTest extends TestCase
   }
 
   /**
-   * Crée un utilisateur, une équipe, un projet et un accès de galerie.
-   *
+   * Crée un fichier rattaché au projet et l'écrit sur le disque local.
+   */
+  private function makeStoredFile(
+    Project $project,
+    string $name,
+    string $mimeType,
+    string $extension,
+    string $contents
+  ): File {
+    $file = File::create([
+      'project_id' => $project->id,
+      'user_id' => $project->owner_id,
+      'name' => pathinfo($name, PATHINFO_FILENAME),
+      'original_name' => $name,
+      'path' => 'projects/' . $project->id . '/' . $name,
+      'disk' => 'local',
+      'size' => strlen($contents),
+      'mime_type' => $mimeType,
+      'extension' => $extension,
+    ]);
+
+    Storage::disk('local')->put($file->path, $contents);
+
+    return $file;
+  }
+
+  /**
+   * Crée un utilisateur, une équipe, un projet et un accès de galerie.   *
    * @return array{0: User, 1: Team, 2: Project, 3: ProjectAccess}
    */
   private function makeGallery(array $accessAttributes = []): array

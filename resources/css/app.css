@@ -614,3 +614,53 @@ textarea,
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
+
+/*
+ * Galerie client plein écran (PrimeReact Galleria).
+ * Sans ces règles, la galerie prend la hauteur naturelle de son contenu :
+ * les miniatures (images portrait) imposent une hauteur énorme qui déborde
+ * de l'écran. On contraint donc la galerie à la taille de la fenêtre et on
+ * réserve une hauteur fixe à la bande de miniatures.
+ */
+.p-galleria.p-galleria-fullscreen {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+}
+
+.p-galleria-fullscreen .p-galleria-header,
+.p-galleria-fullscreen .p-galleria-footer {
+    flex: 0 0 auto;
+}
+
+.p-galleria-fullscreen .p-galleria-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.p-galleria-fullscreen .p-galleria-item-wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.p-galleria-fullscreen .p-galleria-thumbnail-wrapper {
+    flex: 0 0 auto;
+}
+
+.p-galleria-fullscreen .p-galleria-thumbnail-item,
+.p-galleria-fullscreen .p-galleria-thumbnail-item-content {
+    height: 4.5rem;
+}
+
+.p-galleria-fullscreen .p-galleria-thumbnail-item-content {
+    width: 100%;
+}
+
+.p-galleria-fullscreen .p-galleria-thumbnail-item img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+}
