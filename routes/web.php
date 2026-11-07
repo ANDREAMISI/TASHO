@@ -63,6 +63,7 @@ Route::post('/gallery/{token}/authenticate', [ShareController::class, 'authentic
 Route::post('/gallery/{token}/comment', [ShareController::class, 'comment'])->name('public.comment');
 Route::post('/gallery/{token}/favorite', [ShareController::class, 'favoriteGallery'])->name('public.favorite');
 Route::get('/gallery/{token}/view/{file}', [ShareController::class, 'viewFile'])->name('public.view');
+Route::get('/gallery/{token}/download', [ShareController::class, 'downloadFiles'])->name('public.download.all');
 Route::get('/gallery/{token}/download/{file}', [ShareController::class, 'downloadFile'])->name('public.download');
 Route::get('/gallery/{token}/comments', [ShareController::class, 'getComments'])->name('public.comments');
 
