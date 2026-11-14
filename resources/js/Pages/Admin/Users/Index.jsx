@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import AdminLayout from '@/Layouts/AdminLayout';
+import UserFormModal from '@/Components/Admin/UserFormModal';
 import {
     MagnifyingGlassIcon,
     EyeIcon,
@@ -14,6 +16,18 @@ import {
 export default function UsersIndex({ auth, users }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilters, setShowFilters] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+
+    const openEdit = (user) => {
+        setEditing(user);
+        setFormOpen(true);
+    };
+
+    const closeForm = () => {
+        setFormOpen(false);
+        setEditing(null);
+    };
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -21,20 +35,35 @@ export default function UsersIndex({ auth, users }) {
     };
 
     const toggleUser = (user) => {
-        if (confirm(`Voulez-vous ${user.is_active ? 'désactiver' : 'activer'} l'utilisateur ${user.name} ?`)) {
-            router.post(route('admin.users.toggle', user.id), {}, { preserveScroll: true });
-        }
+        confirmDialog({
+            message: `Voulez-vous ${user.is_active ? 'désactiver' : 'activer'} l'utilisateur ${user.name} ?`,
+            header: user.is_active ? "Désactiver l'utilisateur" : "Activer l'utilisateur",
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: user.is_active ? 'Désactiver' : 'Activer',
+            rejectLabel: 'Annuler',
+            accept: () =>
+                router.post(route('admin.users.toggle', user.id), {}, { preserveScroll: true }),
+        });
     };
 
     const deleteUser = (user) => {
-        if (confirm(`Voulez-vous vraiment supprimer l'utilisateur ${user.name} ?`)) {
-            router.delete(route('admin.users.destroy', user.id), { preserveScroll: true });
-        }
+        confirmDialog({
+            message: `Voulez-vous vraiment supprimer l'utilisateur ${user.name} ?`,
+            header: "Supprimer l'utilisateur",
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Supprimer',
+            rejectLabel: 'Annuler',
+            acceptClassName: 'p-button-danger',
+            accept: () =>
+                router.delete(route('admin.users.destroy', user.id), { preserveScroll: true }),
+        });
     };
 
     return (
         <AdminLayout user={auth.user}>
             <Head title="Utilisateurs - Administration" />
+
+            <ConfirmDialog />
 
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -143,6 +172,14 @@ export default function UsersIndex({ auth, users }) {
                                                             <EyeIcon className="h-4 w-4" />
                                                         </Link>
                                                         <button
+                                                            type="button"
+                                                            onClick={() => openEdit(user)}
+                                                            className="text-gray-400 hover:text-gray-600 transition"
+                                                            title="Modifier"
+                                                        >
+                                                            <PencilIcon className="h-4 w-4" />
+                                                        </button>
+                                                        <button
                                                             onClick={() => toggleUser(user)}
                                                             className={`transition ${
                                                                 user.is_active
@@ -206,6 +243,12 @@ export default function UsersIndex({ auth, users }) {
                     )}
                 </div>
             </div>
+
+            <UserFormModal
+                visible={formOpen}
+                onHide={closeForm}
+                user={editing}
+            />
         </AdminLayout>
     );
 }

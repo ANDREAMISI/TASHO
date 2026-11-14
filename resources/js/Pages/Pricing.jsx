@@ -1,79 +1,35 @@
 import { Head, Link } from '@inertiajs/react';
 import { CheckIcon, ArrowRightIcon, XMarkIcon } from '@/Components/Icons';
 
-export default function Pricing() {
-    const plans = [
-        {
-            name: 'Free',
-            price: '0',
-            description: 'Pour commencer',
-            features: [
-                { name: 'Stockage', value: '1GB' },
-                { name: 'Membres', value: '1' },
-                { name: 'Projets', value: '3' },
-                { name: 'Partage client', value: false },
-                { name: 'Commentaires', value: false },
-                { name: 'Audit complet', value: false },
-                { name: 'Support', value: 'Communauté' },
-            ],
-            buttonText: 'Commencer',
-            popular: false,
-            priceId: 'free',
-        },
-        {
-            name: 'Starter',
-            price: '19',
-            description: 'Pour les freelances',
-            features: [
-                { name: 'Stockage', value: '10GB' },
-                { name: 'Membres', value: '3' },
-                { name: 'Projets', value: 'Illimité' },
-                { name: 'Partage client', value: true },
-                { name: 'Commentaires', value: true },
-                { name: 'Audit complet', value: false },
-                { name: 'Support', value: 'Email' },
-            ],
-            buttonText: 'Essayer',
-            popular: true,
-            priceId: 'starter',
-        },
-        {
-            name: 'Pro',
-            price: '49',
-            description: 'Pour les studios',
-            features: [
-                { name: 'Stockage', value: '500GB' },
-                { name: 'Membres', value: '15' },
-                { name: 'Projets', value: 'Illimité' },
-                { name: 'Partage client', value: true },
-                { name: 'Commentaires', value: true },
-                { name: 'Audit complet', value: true },
-                { name: 'Support', value: 'Prioritaire' },
-            ],
-            buttonText: 'Essayer',
-            popular: false,
-            priceId: 'pro',
-        },
-        {
-            name: 'Studio',
-            price: '99',
-            description: 'Pour les agences',
-            features: [
-                { name: 'Stockage', value: '1TB' },
-                { name: 'Membres', value: 'Illimité' },
-                { name: 'Projets', value: 'Illimité' },
-                { name: 'Partage client', value: true },
-                { name: 'Commentaires', value: true },
-                { name: 'Audit complet', value: true },
-                { name: 'Support', value: 'Dédié' },
-            ],
-            buttonText: 'Contacter',
-            popular: false,
-            priceId: 'studio',
-        },
-    ];
+const getFeature = (plan, name) => plan.features.find((feature) => feature.name === name);
 
-    const featureNames = ['Stockage', 'Membres', 'Projets', 'Partage client', 'Commentaires', 'Audit complet', 'Support'];
+export default function Pricing({ plans = [] }) {
+    const activePlans = plans ?? [];
+
+    const featureNames = [];
+    activePlans.forEach((plan) => {
+        plan.features.forEach((feature) => {
+            if (!featureNames.includes(feature.name)) {
+                featureNames.push(feature.name);
+            }
+        });
+    });
+
+    const popularIndex = activePlans.length > 1 ? 1 : 0;
+
+    const renderValue = (feature, iconClass = 'h-5 w-5 mx-auto') => {
+        if (!feature) return <span className="text-gray-400">—</span>;
+
+        if (typeof feature.value === 'boolean') {
+            return feature.value ? (
+                <CheckIcon className={`${iconClass} text-green-500`} />
+            ) : (
+                <XMarkIcon className={`${iconClass} text-gray-300`} />
+            );
+        }
+
+        return <span className="text-sm font-medium text-gray-900">{feature.value}</span>;
+    };
 
     return (
         <>
@@ -98,106 +54,123 @@ export default function Pricing() {
             {/* Pricing Cards */}
             <section className="py-20 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {plans.map((plan, index) => (
-                            <div
-                                key={index}
-                                className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition relative ${
-                                    plan.popular ? 'ring-2 ring-tasho-primary shadow-tasho-primary/10' : ''
-                                }`}
+                    {activePlans.length === 0 ? (
+                        <div className="mx-auto max-w-xl rounded-2xl bg-white p-10 text-center shadow-sm">
+                            <h2 className="text-xl font-bold text-gray-900">Les offres arrivent bientôt</h2>
+                            <p className="mt-2 text-gray-500">
+                                Aucun plan n'est disponible pour le moment. Revenez très prochainement.
+                            </p>
+                            <Link
+                                href={route('register')}
+                                className="mt-6 inline-flex items-center rounded-lg bg-tasho-primary px-6 py-2 font-medium text-white transition hover:bg-tasho-primary/90"
                             >
-                                {plan.popular && (
-                                    <span className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-tasho-primary text-white text-xs font-semibold rounded-full">
-                                        Recommandé
-                                    </span>
-                                )}
-                                <div className="text-center">
-                                    <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                                    <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
-                                    <div className="mt-4">
-                                        <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
-                                        <span className="text-gray-500">/mois</span>
-                                    </div>
-                                </div>
+                                Créer un compte
+                                <ArrowRightIcon className="ml-2 h-4 w-4" />
+                            </Link>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {activePlans.map((plan, index) => {
+                                    const popular = index === popularIndex;
 
-                                <ul className="mt-6 space-y-3">
-                                    {plan.features.map((feature, fIndex) => (
-                                        <li key={fIndex} className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600">{feature.name}</span>
-                                            {typeof feature.value === 'boolean' ? (
-                                                feature.value ? (
-                                                    <CheckIcon className="h-4 w-4 text-green-500" />
-                                                ) : (
-                                                    <XMarkIcon className="h-4 w-4 text-gray-300" />
-                                                )
-                                            ) : (
-                                                <span className="font-medium text-gray-900">{feature.value}</span>
+                                    return (
+                                        <div
+                                            key={plan.id}
+                                            className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition relative ${
+                                                popular ? 'ring-2 ring-tasho-primary shadow-tasho-primary/10' : ''
+                                            }`}
+                                        >
+                                            {popular && (
+                                                <span className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-tasho-primary text-white text-xs font-semibold rounded-full">
+                                                    Recommandé
+                                                </span>
                                             )}
-                                        </li>
-                                    ))}
-                                </ul>
+                                            <div className="text-center">
+                                                <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                                                <p className="text-sm text-gray-500 mt-1">
+                                                    {plan.description || 'Pour vos besoins créatifs'}
+                                                </p>
+                                                <div className="mt-4">
+                                                    <span className="text-4xl font-bold text-gray-900">
+                                                        {plan.is_free ? 'Gratuit' : plan.price_monthly_formatted}
+                                                    </span>
+                                                    {!plan.is_free && (
+                                                        <span className="text-gray-500">/mois</span>
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                <div className="mt-6">
-                                    <Link
-                                        href={route('register')}
-                                        className={`block text-center px-4 py-2 rounded-lg font-semibold transition ${
-                                            plan.popular
-                                                ? 'bg-tasho-primary text-white hover:bg-tasho-primary/90'
-                                                : plan.priceId === 'studio'
-                                                ? 'bg-white border-2 border-tasho-primary text-tasho-primary hover:bg-tasho-primary/5'
-                                                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                                        }`}
-                                    >
-                                        {plan.buttonText}
-                                    </Link>
+                                            <ul className="mt-6 space-y-3">
+                                                {plan.features.map((feature, fIndex) => (
+                                                    <li key={fIndex} className="flex items-center justify-between text-sm">
+                                                        <span className="text-gray-600">{feature.name}</span>
+                                                        {typeof feature.value === 'boolean' ? (
+                                                            feature.value ? (
+                                                                <CheckIcon className="h-4 w-4 text-green-500" />
+                                                            ) : (
+                                                                <XMarkIcon className="h-4 w-4 text-gray-300" />
+                                                            )
+                                                        ) : (
+                                                            <span className="font-medium text-gray-900">{feature.value}</span>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+
+                                            <div className="mt-6">
+                                                <Link
+                                                    href={route('register')}
+                                                    className={`block text-center px-4 py-2 rounded-lg font-semibold transition ${
+                                                        popular
+                                                            ? 'bg-tasho-primary text-white hover:bg-tasho-primary/90'
+                                                            : plan.is_free
+                                                            ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                                                            : 'bg-white border-2 border-tasho-primary text-tasho-primary hover:bg-tasho-primary/5'
+                                                    }`}
+                                                >
+                                                    {plan.is_free ? 'Commencer' : 'Choisir ce plan'}
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Comparison Table */}
+                            <div className="mt-16 bg-white rounded-2xl shadow-sm overflow-hidden">
+                                <div className="p-6 border-b border-gray-200">
+                                    <h2 className="text-xl font-bold text-gray-900">Comparaison détaillée</h2>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-gray-50">
+                                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Fonctionnalité</th>
+                                                {activePlans.map((plan) => (
+                                                    <th key={plan.id} className="px-6 py-3 text-center text-sm font-semibold text-gray-900">
+                                                        {plan.name}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {featureNames.map((feature, index) => (
+                                                <tr key={index} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-3 text-sm text-gray-600">{feature}</td>
+                                                    {activePlans.map((plan) => (
+                                                        <td key={`${plan.id}-${feature}`} className="px-6 py-3 text-center">
+                                                            {renderValue(getFeature(plan, feature))}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-
-                    {/* Comparison Table */}
-                    <div className="mt-16 bg-white rounded-2xl shadow-sm overflow-hidden">
-                        <div className="p-6 border-b border-gray-200">
-                            <h2 className="text-xl font-bold text-gray-900">Comparaison détaillée</h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="bg-gray-50">
-                                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Fonctionnalité</th>
-                                        {plans.map((plan) => (
-                                            <th key={plan.name} className="px-6 py-3 text-center text-sm font-semibold text-gray-900">
-                                                {plan.name}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {featureNames.map((feature, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="px-6 py-3 text-sm text-gray-600">{feature}</td>
-                                            {plans.map((plan) => (
-                                                <td key={plan.name + feature} className="px-6 py-3 text-center">
-                                                    {(() => {
-                                                        const f = plan.features.find(f => f.name === feature);
-                                                        if (!f) return <span className="text-gray-400">—</span>;
-                                                        if (typeof f.value === 'boolean') {
-                                                            return f.value ? (
-                                                                <CheckIcon className="h-5 w-5 text-green-500 mx-auto" />
-                                                            ) : (
-                                                                <XMarkIcon className="h-5 w-5 text-gray-300 mx-auto" />
-                                                            );
-                                                        }
-                                                        return <span className="text-sm font-medium text-gray-900">{f.value}</span>;
-                                                    })()}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                        </>
+                    )}
 
                     {/* FAQ */}
                     <div className="mt-16">

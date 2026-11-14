@@ -1,12 +1,17 @@
+import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import AdminLayout from '@/Layouts/AdminLayout';
+import UserFormModal from '@/Components/Admin/UserFormModal';
 import {
     ArrowLeftIcon,
     EnvelopeIcon,
+    PhoneIcon,
     BriefcaseIcon,
     CalendarIcon,
     CheckIcon,
     XMarkIcon,
+    PencilIcon,
     TrashIcon,
     FolderIcon,
     DocumentIcon,
@@ -14,23 +19,40 @@ import {
 } from '@/Components/Icons';
 
 export default function UsersShow({ auth, user }) {
+    const [formOpen, setFormOpen] = useState(false);
+
     const toggleUser = () => {
-        if (confirm(`Voulez-vous ${user.is_active ? 'désactiver' : 'activer'} cet utilisateur ?`)) {
-            router.post(route('admin.users.toggle', user.id), {}, { preserveScroll: true });
-        }
+        confirmDialog({
+            message: `Voulez-vous ${user.is_active ? 'désactiver' : 'activer'} cet utilisateur ?`,
+            header: user.is_active ? "Désactiver l'utilisateur" : "Activer l'utilisateur",
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: user.is_active ? 'Désactiver' : 'Activer',
+            rejectLabel: 'Annuler',
+            accept: () =>
+                router.post(route('admin.users.toggle', user.id), {}, { preserveScroll: true }),
+        });
     };
 
     const deleteUser = () => {
-        if (confirm(`Voulez-vous vraiment supprimer l'utilisateur ${user.name} ?`)) {
-            router.delete(route('admin.users.destroy', user.id), {
-                onSuccess: () => router.visit(route('admin.users.index')),
-            });
-        }
+        confirmDialog({
+            message: `Voulez-vous vraiment supprimer l'utilisateur ${user.name} ?`,
+            header: "Supprimer l'utilisateur",
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Supprimer',
+            rejectLabel: 'Annuler',
+            acceptClassName: 'p-button-danger',
+            accept: () =>
+                router.delete(route('admin.users.destroy', user.id), {
+                    onSuccess: () => router.visit(route('admin.users.index')),
+                }),
+        });
     };
 
     return (
         <AdminLayout user={auth.user}>
             <Head title={`${user.name} - Administration`} />
+
+            <ConfirmDialog />
 
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,6 +75,14 @@ export default function UsersShow({ auth, user }) {
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">
+                            <button
+                                type="button"
+                                onClick={() => setFormOpen(true)}
+                                className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-tasho-primary text-white hover:bg-tasho-primary/90 transition"
+                            >
+                                <PencilIcon className="h-4 w-4 mr-2" />
+                                Modifier
+                            </button>
                             <button
                                 onClick={toggleUser}
                                 className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition ${
@@ -155,6 +185,12 @@ export default function UsersShow({ auth, user }) {
                     </div>
                 </div>
             </div>
+
+            <UserFormModal
+                visible={formOpen}
+                onHide={() => setFormOpen(false)}
+                user={user}
+            />
         </AdminLayout>
     );
 }

@@ -25,10 +25,7 @@ class PlanController extends Controller
      */
     private function formatStorage($bytes)
     {
-        if ($bytes === 0) return '0 B';
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $i = floor(log($bytes, 1024));
-        return round($bytes / pow(1024, $i), 2) . ' ' . $units[$i];
+        return Plan::formatBytes((int) $bytes);
     }
 
     /**
@@ -74,13 +71,6 @@ class PlanController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        $this->checkSuperAdmin();
-
-        return Inertia::render('Admin/Plans/Create');
-    }
-
     public function store(Request $request)
     {
         $this->checkSuperAdmin();
@@ -90,8 +80,8 @@ class PlanController extends Controller
             'slug' => 'required|string|unique:plans,slug|max:255',
             'description' => 'nullable|string',
             'storage_limit' => 'required|integer|min:0',
-            'max_team_members' => 'required|integer|min:1',
-            'max_projects' => 'integer|nullable',
+            'max_team_members' => 'required|integer|min:-1',
+            'max_projects' => 'nullable|integer|min:-1',
             'max_file_size' => 'required|integer|min:0',
             'features' => 'nullable|array',
             'price_monthly' => 'required|integer|min:0',
@@ -143,34 +133,9 @@ class PlanController extends Controller
                 'currency' => $plan->currency,
                 'is_active' => $plan->is_active,
                 'features' => $plan->features,
+                'public_features' => $plan->publicFeatures(),
                 'sort_order' => $plan->sort_order,
                 'created_at' => $plan->created_at,
-            ],
-        ]);
-    }
-
-    public function edit(Plan $plan)
-    {
-        $this->checkSuperAdmin();
-
-        return Inertia::render('Admin/Plans/Edit', [
-            'plan' => [
-                'id' => $plan->id,
-                'name' => $plan->name,
-                'slug' => $plan->slug,
-                'description' => $plan->description,
-                'storage_limit' => $plan->storage_limit,
-                'storage_human' => $this->formatStorage($plan->storage_limit),
-                'max_team_members' => $plan->max_team_members,
-                'max_projects' => $plan->max_projects,
-                'max_file_size' => $plan->max_file_size,
-                'max_file_size_human' => $this->formatStorage($plan->max_file_size),
-                'price_monthly' => $plan->price_monthly,
-                'price_yearly' => $plan->price_yearly,
-                'currency' => $plan->currency,
-                'is_active' => $plan->is_active,
-                'features' => $plan->features,
-                'sort_order' => $plan->sort_order,
             ],
         ]);
     }
@@ -184,8 +149,8 @@ class PlanController extends Controller
             'slug' => 'required|string|max:255|unique:plans,slug,' . $plan->id,
             'description' => 'nullable|string',
             'storage_limit' => 'required|integer|min:0',
-            'max_team_members' => 'required|integer|min:1',
-            'max_projects' => 'integer|nullable',
+            'max_team_members' => 'required|integer|min:-1',
+            'max_projects' => 'nullable|integer|min:-1',
             'max_file_size' => 'required|integer|min:0',
             'features' => 'nullable|array',
             'price_monthly' => 'required|integer|min:0',

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
     MagnifyingGlassIcon,
@@ -21,14 +22,25 @@ export default function TeamsIndex({ auth, teams }) {
     };
 
     const deleteTeam = (team) => {
-        if (confirm(`Voulez-vous vraiment supprimer l'équipe "${team.name}" ?`)) {
-            router.delete(route('admin.teams.destroy', team.id), { preserveScroll: true });
-        }
+        confirmDialog({
+            message: `Voulez-vous vraiment supprimer l'équipe "${team.name}" ?`,
+            header: "Supprimer l'équipe",
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Supprimer',
+            rejectLabel: 'Annuler',
+            acceptClassName: 'p-button-danger',
+            accept: () =>
+                router.delete(route('admin.teams.destroy', team.id), {
+                    preserveScroll: true,
+                }),
+        });
     };
 
     return (
         <AdminLayout user={auth.user}>
             <Head title="Équipes - Administration" />
+
+            <ConfirmDialog />
 
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

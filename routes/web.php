@@ -240,10 +240,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         // Gestion des abonnements
         // ============================================================
         Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
-        Route::get('/subscriptions/create', [SubscriptionController::class, 'create'])->name('subscriptions.create');
         Route::post('/subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
         Route::get('/subscriptions/{subscription}', [SubscriptionController::class, 'show'])->name('subscriptions.show');
-        Route::get('/subscriptions/{subscription}/edit', [SubscriptionController::class, 'edit'])->name('subscriptions.edit');
         Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])->name('subscriptions.update');
         Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
         Route::post('/subscriptions/{subscription}/toggle', [SubscriptionController::class, 'toggle'])->name('subscriptions.toggle');
@@ -252,10 +250,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         // Gestion des plans
         // ============================================================
         Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
-        Route::get('/plans/create', [PlanController::class, 'create'])->name('plans.create');
         Route::post('/plans', [PlanController::class, 'store'])->name('plans.store');
         Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
-        Route::get('/plans/{plan}/edit', [PlanController::class, 'edit'])->name('plans.edit');
         Route::put('/plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
         Route::delete('/plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
         Route::post('/plans/{plan}/toggle', [PlanController::class, 'toggle'])->name('plans.toggle');

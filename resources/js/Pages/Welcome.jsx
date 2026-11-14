@@ -47,6 +47,16 @@ const COPY = {
             popular: 'Populaire',
             trial: "Commencer l'essai gratuit",
             sales: 'Contacter les ventes',
+            free: 'Gratuit',
+            start: 'Commencer gratuitement',
+            choose: 'Choisir ce plan',
+            empty: 'Les offres seront bientôt disponibles.',
+            storage: (value) => `${value} de stockage`,
+            members: (value) =>
+                value === -1 ? 'Membres illimités' : `${value} membre${value > 1 ? 's' : ''}`,
+            projects: (value) =>
+                value === -1 ? 'Projets illimités' : `${value} projet${value > 1 ? 's' : ''}`,
+            files: (value) => `Fichiers jusqu'à ${value}`,
             plans: [
                 {
                     name: 'Découverte',
@@ -115,6 +125,16 @@ const COPY = {
             popular: 'Popular',
             trial: 'Start free trial',
             sales: 'Contact sales',
+            free: 'Free',
+            start: 'Get started free',
+            choose: 'Choose this plan',
+            empty: 'Plans will be available soon.',
+            storage: (value) => `${value} of storage`,
+            members: (value) =>
+                value === -1 ? 'Unlimited members' : `${value} member${value > 1 ? 's' : ''}`,
+            projects: (value) =>
+                value === -1 ? 'Unlimited projects' : `${value} project${value > 1 ? 's' : ''}`,
+            files: (value) => `Files up to ${value}`,
             plans: [
                 {
                     name: 'Discovery',
@@ -175,11 +195,36 @@ const getInitialLang = () => {
     return window.localStorage.getItem('tasho-lang') === 'en' ? 'en' : 'fr';
 };
 
-export default function Welcome({ canLogin, canRegister }) {
+export default function Welcome({ canLogin, canRegister, plans = [] }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [theme, setTheme] = useState(getInitialTheme);
     const [lang, setLang] = useState(getInitialLang);
     const copy = COPY[lang];
+
+    const planCards =
+        plans.length > 0
+            ? plans.map((plan, index) => ({
+                  id: plan.id,
+                  name: plan.name,
+                  price: plan.is_free ? copy.pricing.free : plan.price_monthly_formatted,
+                  isFree: plan.is_free,
+                  desc: plan.description || copy.pricing.subtitle,
+                  features: [
+                      copy.pricing.storage(plan.storage_human),
+                      copy.pricing.members(plan.max_team_members),
+                      copy.pricing.projects(plan.max_projects),
+                      copy.pricing.files(plan.max_file_size_human),
+                      ...plan.features
+                          .filter((feature) => feature.value === true)
+                          .map((feature) => feature.name),
+                  ],
+                  button: plan.is_free ? copy.pricing.start : copy.pricing.choose,
+                  highlight: index === (plans.length > 1 ? 1 : 0),
+              }))
+            : copy.pricing.plans.map((plan) => ({
+                  ...plan,
+                  button: plan.highlight ? copy.pricing.trial : copy.pricing.sales,
+              }));
 
     useEffect(() => {
         document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -442,9 +487,9 @@ export default function Welcome({ canLogin, canRegister }) {
                         </p>
 
                         <div className="mt-10 grid gap-6 md:grid-cols-3">
-                            {copy.pricing.plans.map((plan, index) => (
+                            {planCards.map((plan) => (
                                 <div
-                                    key={index}
+                                    key={plan.id ?? plan.name}
                                     className={`rounded-[28px] border p-6 text-left shadow-sm ${
                                         plan.highlight
                                             ? 'border-[#1d6bf1] bg-[#071a2d] text-white shadow-[0_25px_50px_rgba(14,65,128,0.25)]'
@@ -462,9 +507,11 @@ export default function Welcome({ canLogin, canRegister }) {
 
                                     <div className="mb-6 flex items-end gap-2">
                                         <span className="text-4xl font-black tracking-[-0.06em]">{plan.price}</span>
-                                        <span className={`${plan.highlight ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'} text-sm`}>
-                                            {copy.pricing.month}
-                                        </span>
+                                        {!plan.isFree && (
+                                            <span className={`${plan.highlight ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'} text-sm`}>
+                                                {copy.pricing.month}
+                                            </span>
+                                        )}
                                     </div>
 
                                     <p className={`mb-6 text-sm ${plan.highlight ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -484,16 +531,16 @@ export default function Welcome({ canLogin, canRegister }) {
                                         ))}
                                     </ul>
 
-                                    <button
-                                        type="button"
-                                        className={`mt-8 w-full rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                                    <Link
+                                        href={route('register')}
+                                        className={`mt-8 block w-full rounded-xl px-4 py-3 text-center text-sm font-semibold transition ${
                                             plan.highlight
                                                 ? 'bg-blue-600 text-white hover:bg-blue-500'
                                                 : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500'
                                         }`}
                                     >
-                                        {index === 2 ? copy.pricing.sales : copy.pricing.trial}
-                                    </button>
+                                        {plan.button}
+                                    </Link>
                                 </div>
                             ))}
                         </div>

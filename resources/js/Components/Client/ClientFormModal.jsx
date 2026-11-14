@@ -4,6 +4,7 @@ import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import FormDialog from '@/Components/Prime/FormDialog';
 import FormField from '@/Components/Prime/FormField';
+import PhoneField from '@/Components/PhoneField';
 
 /**
  * Modale de création / modification d'un client.
@@ -127,12 +128,12 @@ export default function ClientFormModal({ visible, onHide, client = null }) {
                         htmlFor="client-phone"
                         error={errors.phone}
                     >
-                        <InputText
+                        <PhoneField
                             id="client-phone"
+                            name="phone"
                             value={data.phone}
-                            onChange={(event) => setData('phone', event.target.value)}
-                            placeholder="+243 …"
-                            className={errors.phone ? 'p-invalid' : ''}
+                            onChange={(value) => setData('phone', value)}
+                            invalid={Boolean(errors.phone)}
                         />
                     </FormField>
 

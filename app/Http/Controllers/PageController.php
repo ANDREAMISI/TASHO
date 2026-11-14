@@ -2,11 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Plan;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 class PageController extends Controller
 {
+    /**
+     * Récupérer les plans actifs à afficher côté public.
+     */
+    private function publicPlans(): array
+    {
+        return Plan::active()
+            ->ordered()
+            ->get()
+            ->map(fn (Plan $plan) => $plan->toPublicArray())
+            ->values()
+            ->all();
+    }
+
     /**
      * Afficher la page d'accueil
      */
@@ -15,6 +29,7 @@ class PageController extends Controller
         return Inertia::render('Welcome', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
+            'plans' => $this->publicPlans(),
         ]);
     }
 
@@ -31,6 +46,8 @@ class PageController extends Controller
      */
     public function pricing()
     {
-        return Inertia::render('Pricing');
+        return Inertia::render('Pricing', [
+            'plans' => $this->publicPlans(),
+        ]);
     }
 }

@@ -19,13 +19,13 @@ class PlansSeeder extends Seeder
                 'max_team_members' => 1,
                 'max_projects' => 3,
                 'max_file_size' => 52428800, // 50 Mo
-                'features' => json_encode([
+                'features' => [
                     'stockage_base' => true,
                     'partage_client' => false,
                     'commentaires' => false,
                     'equipe' => false,
                     'audit' => false,
-                ]),
+                ],
                 'price_monthly' => 0,
                 'price_yearly' => 0,
                 'currency' => 'FBU',
@@ -40,14 +40,14 @@ class PlansSeeder extends Seeder
                 'max_team_members' => 3,
                 'max_projects' => -1, // Illimité
                 'max_file_size' => 524288000, // 500 Mo
-                'features' => json_encode([
+                'features' => [
                     'stockage_base' => true,
                     'partage_client' => true,
                     'commentaires' => true,
                     'equipe' => true,
                     'audit' => false,
                     'support_email' => true,
-                ]),
+                ],
                 'price_monthly' => 30000,
                 'price_yearly' => 300000, // 30 000 * 10 (réduction)
                 'currency' => 'FBU',
@@ -62,7 +62,7 @@ class PlansSeeder extends Seeder
                 'max_team_members' => 10,
                 'max_projects' => -1, // Illimité
                 'max_file_size' => 1073741824, // 1 Go
-                'features' => json_encode([
+                'features' => [
                     'stockage_base' => true,
                     'partage_client' => true,
                     'commentaires' => true,
@@ -71,7 +71,7 @@ class PlansSeeder extends Seeder
                     'support_email' => true,
                     'permissions_avancees' => true,
                     'api_access' => false,
-                ]),
+                ],
                 'price_monthly' => 60000,
                 'price_yearly' => 600000, // 60 000 * 10
                 'currency' => 'FBU',
@@ -86,7 +86,7 @@ class PlansSeeder extends Seeder
                 'max_team_members' => -1, // Illimité
                 'max_projects' => -1, // Illimité
                 'max_file_size' => 5368709120, // 5 Go
-                'features' => json_encode([
+                'features' => [
                     'stockage_base' => true,
                     'partage_client' => true,
                     'commentaires' => true,
@@ -97,7 +97,7 @@ class PlansSeeder extends Seeder
                     'api_access' => true,
                     'support_prioritaire' => true,
                     'branding_personnalise' => true,
-                ]),
+                ],
                 'price_monthly' => 100000,
                 'price_yearly' => 1000000, // 100 000 * 10
                 'currency' => 'FBU',

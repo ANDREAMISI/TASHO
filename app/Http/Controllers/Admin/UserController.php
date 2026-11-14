@@ -52,7 +52,7 @@ class UserController extends Controller
 
         $user->update($request->only('name', 'email', 'is_active'));
 
-        return redirect()->route('admin.users.show', $user)->with('success', 'Utilisateur mis à jour.');
+        return back()->with('success', 'Utilisateur mis à jour.');
     }
 
     public function toggle(User $user)

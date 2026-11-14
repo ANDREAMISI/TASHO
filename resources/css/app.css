@@ -664,3 +664,100 @@ textarea,
     width: 100%;
     object-fit: cover;
 }
+
+/*
+ * Champ téléphone (react-phone-number-input).
+ * Le conteneur reprend l'apparence des champs PrimeReact ; l'input interne
+ * est transparent pour que le pays et le numéro forment un seul champ.
+ */
+.tasho-phone-input {
+    --PhoneInputCountryFlag-height: 1.1em;
+    --PhoneInputCountrySelect-marginRight: 0.5rem;
+    --PhoneInput-color--focus: #1b9cd8;
+
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tasho-phone-input:focus-within {
+    border-color: #1b9cd8;
+    box-shadow: 0 0 0 2px rgba(27, 156, 216, 0.18);
+}
+
+.tasho-phone-input .PhoneInputInput {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 0.7rem 0;
+    border: 0;
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+    color: #495057;
+    font: inherit;
+}
+
+.tasho-phone-input .PhoneInputInput::placeholder {
+    color: #9ca3af;
+}
+
+.tasho-phone-input--invalid {
+    border-color: #e24c4c;
+}
+
+.tasho-phone-input--invalid:focus-within {
+    border-color: #e24c4c;
+    box-shadow: 0 0 0 2px rgba(226, 76, 76, 0.16);
+}
+
+/* Variante sombre des pages d'authentification. */
+.tasho-phone-input--dark {
+    min-height: 2.5rem;
+    border-color: #475569;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: #ffffff;
+}
+
+.tasho-phone-input--dark .PhoneInputInput {
+    padding: 0;
+    height: 2.5rem;
+    color: #ffffff;
+}
+
+.tasho-phone-input--dark .PhoneInputInput::placeholder {
+    color: #9ca3af;
+}
+
+.tasho-phone-input--dark:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.tasho-phone-input--dark .PhoneInputCountrySelectArrow {
+    color: #cbd5e1;
+}
+
+.tasho-phone-input--dark.PhoneInput--disabled {
+    opacity: 0.6;
+}
+
+/*
+ * Les formulaires d'administration peuvent être longs : on limite la hauteur
+ * de la modale et on rend le contenu défilant pour garder le footer visible.
+ */
+.app-form-dialog {
+    max-height: 90vh;
+}
+
+.app-form-dialog .p-dialog-content {
+    max-height: calc(90vh - 10rem);
+    overflow-y: auto;
+}

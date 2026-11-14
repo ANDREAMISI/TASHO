@@ -64,6 +64,8 @@ class SubscriptionController extends Controller
             ->through(function ($subscription) {
                 return [
                     'id' => $subscription->id,
+                    'user_id' => $subscription->user_id,
+                    'plan_id' => $subscription->plan_id,
                     'user' => $subscription->user ? [
                         'id' => $subscription->user->id,
                         'name' => $subscription->user->name,
@@ -84,8 +86,9 @@ class SubscriptionController extends Controller
                     'billing_cycle' => $subscription->billing_cycle,
                     'amount' => $subscription->amount,
                     'amount_formatted' => $this->formatAmount($subscription->amount),
-                    'start_date' => $subscription->start_date,
-                    'end_date' => $subscription->end_date,
+                    'payment_method' => $subscription->payment_method,
+                    'start_date' => $subscription->start_date?->format('Y-m-d'),
+                    'end_date' => $subscription->end_date?->format('Y-m-d'),
                     'last_payment_at' => $subscription->last_payment_at,
                     'next_payment_at' => $subscription->next_payment_at,
                     'notes' => $subscription->notes,
@@ -96,7 +99,10 @@ class SubscriptionController extends Controller
                 ];
             });
 
-        $plans = Plan::where('is_active', true)->get(['id', 'name', 'slug']);
+        $plans = Plan::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']);
+        $users = User::orderBy('name')->get(['id', 'name', 'email']);
         $statuses = ['active', 'inactive', 'expired', 'cancelled'];
 
         return Inertia::render('Admin/Subscriptions/Index', [
@@ -104,28 +110,8 @@ class SubscriptionController extends Controller
             'filters' => $request->only(['status', 'plan_id', 'search']),
             'plans' => $plans,
             'statuses' => $statuses,
-        ]);
-    }
-
-    /**
-     * Afficher le formulaire de création
-     */
-    public function create()
-    {
-        $this->checkSuperAdmin();
-
-        $plans = Plan::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']);
-            
-        $users = User::orderBy('name')
-            ->get(['id', 'name', 'email']);
-
-        return Inertia::render('Admin/Subscriptions/Create', [
-            'plans' => $plans,
             'users' => $users,
             'billingCycles' => ['monthly', 'yearly'],
-            'statuses' => ['active', 'inactive', 'expired', 'cancelled'],
         ]);
     }
 
@@ -195,6 +181,8 @@ class SubscriptionController extends Controller
         return Inertia::render('Admin/Subscriptions/Show', [
             'subscription' => [
                 'id' => $subscription->id,
+                'user_id' => $subscription->user_id,
+                'plan_id' => $subscription->plan_id,
                 'user' => $subscription->user,
                 'team' => $subscription->team,
                 'plan' => $subscription->plan,
@@ -206,8 +194,8 @@ class SubscriptionController extends Controller
                 'amount_formatted' => $this->formatAmount($subscription->amount),
                 'payment_method' => $subscription->payment_method,
                 'payment_data' => $subscription->payment_data,
-                'start_date' => $subscription->start_date,
-                'end_date' => $subscription->end_date,
+                'start_date' => $subscription->start_date?->format('Y-m-d'),
+                'end_date' => $subscription->end_date?->format('Y-m-d'),
                 'last_payment_at' => $subscription->last_payment_at,
                 'next_payment_at' => $subscription->next_payment_at,
                 'notes' => $subscription->notes,
@@ -219,41 +207,10 @@ class SubscriptionController extends Controller
                     ? now()->diffInDays($subscription->end_date, false) 
                     : null,
             ],
-        ]);
-    }
-
-    /**
-     * Afficher le formulaire de modification
-     */
-    public function edit(Subscription $subscription)
-    {
-        $this->checkSuperAdmin();
-
-        $subscription->load(['user', 'team', 'plan']);
-
-        $plans = Plan::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']);
-            
-        $users = User::orderBy('name')
-            ->get(['id', 'name', 'email']);
-
-        return Inertia::render('Admin/Subscriptions/Edit', [
-            'subscription' => [
-                'id' => $subscription->id,
-                'user_id' => $subscription->user_id,
-                'team_id' => $subscription->team_id,
-                'plan_id' => $subscription->plan_id,
-                'status' => $subscription->status,
-                'billing_cycle' => $subscription->billing_cycle,
-                'start_date' => $subscription->start_date ? $subscription->start_date->format('Y-m-d') : null,
-                'end_date' => $subscription->end_date ? $subscription->end_date->format('Y-m-d') : null,
-                'amount' => $subscription->amount,
-                'payment_method' => $subscription->payment_method,
-                'notes' => $subscription->notes,
-            ],
-            'plans' => $plans,
-            'users' => $users,
+            'plans' => Plan::where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'slug', 'price_monthly', 'price_yearly', 'currency']),
+            'users' => User::orderBy('name')->get(['id', 'name', 'email']),
             'billingCycles' => ['monthly', 'yearly'],
             'statuses' => ['active', 'inactive', 'expired', 'cancelled'],
         ]);

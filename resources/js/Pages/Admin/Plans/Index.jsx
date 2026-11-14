@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import AdminLayout from '@/Layouts/AdminLayout';
+import PlanFormModal from '@/Components/Admin/PlanFormModal';
 import {
     PlusIcon,
     EyeIcon,
@@ -16,20 +18,49 @@ import {
 } from '@/Components/Icons';
 
 export default function PlansIndex({ auth, plans }) {
-    const [showDeleted, setShowDeleted] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+
+    const openCreate = () => {
+        setEditing(null);
+        setFormOpen(true);
+    };
+
+    const openEdit = (plan) => {
+        setEditing(plan);
+        setFormOpen(true);
+    };
+
+    const closeForm = () => {
+        setFormOpen(false);
+        setEditing(null);
+    };
 
     const togglePlan = (plan) => {
-        if (confirm(`Voulez-vous ${plan.is_active ? 'désactiver' : 'activer'} le plan "${plan.name}" ?`)) {
-            router.post(route('admin.plans.toggle', plan.id), {}, { preserveScroll: true });
-        }
+        confirmDialog({
+            message: `Voulez-vous ${plan.is_active ? 'désactiver' : 'activer'} le plan "${plan.name}" ?`,
+            header: plan.is_active ? 'Désactiver le plan' : 'Activer le plan',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: plan.is_active ? 'Désactiver' : 'Activer',
+            rejectLabel: 'Annuler',
+            accept: () =>
+                router.post(route('admin.plans.toggle', plan.id), {}, { preserveScroll: true }),
+        });
     };
 
     const deletePlan = (plan) => {
-        if (confirm(`Voulez-vous vraiment supprimer le plan "${plan.name}" ?`)) {
-            router.delete(route('admin.plans.destroy', plan.id), {
-                preserveScroll: true,
-            });
-        }
+        confirmDialog({
+            message: `Voulez-vous vraiment supprimer le plan "${plan.name}" ?`,
+            header: 'Supprimer le plan',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Supprimer',
+            rejectLabel: 'Annuler',
+            acceptClassName: 'p-button-danger',
+            accept: () =>
+                router.delete(route('admin.plans.destroy', plan.id), {
+                    preserveScroll: true,
+                }),
+        });
     };
 
     // ✅ Formatage des prix en Franc Burundais (FBU)
@@ -63,6 +94,8 @@ export default function PlansIndex({ auth, plans }) {
         <AdminLayout user={auth.user}>
             <Head title="Plans - Administration" />
 
+            <ConfirmDialog />
+
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Header */}
@@ -73,13 +106,14 @@ export default function PlansIndex({ auth, plans }) {
                                 Gestion des plans d'abonnement
                             </p>
                         </div>
-                        <Link
-                            href={route('admin.plans.create')}
+                        <button
+                            type="button"
+                            onClick={openCreate}
                             className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md font-medium hover:bg-tasho-primary/90 transition"
                         >
                             <PlusIcon className="h-4 w-4 mr-2" />
                             Nouveau plan
-                        </Link>
+                        </button>
                     </div>
 
                     {/* Plans Grid */}
@@ -156,13 +190,14 @@ export default function PlansIndex({ auth, plans }) {
                                                 >
                                                     <EyeIcon className="h-4 w-4" />
                                                 </Link>
-                                                <Link
-                                                    href={route('admin.plans.edit', plan.id)}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(plan)}
                                                     className="p-2 text-gray-400 hover:text-gray-600 transition"
                                                     title="Modifier"
                                                 >
                                                     <PencilIcon className="h-4 w-4" />
-                                                </Link>
+                                                </button>
                                                 <button
                                                     onClick={() => togglePlan(plan)}
                                                     className={`p-2 transition ${
@@ -199,19 +234,26 @@ export default function PlansIndex({ auth, plans }) {
                                 </div>
                                 <p className="mt-4 text-gray-500">Aucun plan configuré</p>
                                 <div className="mt-4">
-                                    <Link
-                                        href={route('admin.plans.create')}
+                                    <button
+                                        type="button"
+                                        onClick={openCreate}
                                         className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md font-medium hover:bg-tasho-primary/90"
                                     >
                                         <PlusIcon className="h-4 w-4 mr-2" />
                                         Créer un plan
-                                    </Link>
+                                    </button>
                                 </div>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+
+            <PlanFormModal
+                visible={formOpen}
+                onHide={closeForm}
+                plan={editing}
+            />
         </AdminLayout>
     );
 }

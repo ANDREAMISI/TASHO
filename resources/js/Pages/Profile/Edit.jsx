@@ -10,6 +10,7 @@ import Button from '@/Components/Button';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FormDialog from '@/Components/Prime/FormDialog';
 import FormField from '@/Components/Prime/FormField';
+import PhoneField from '@/Components/PhoneField';
 import AvatarCropDialog from '@/Components/Profile/AvatarCropDialog';
 import {
     Camera,
@@ -495,14 +496,14 @@ export default function ProfileEdit({ stats = {}, memberSince = null, mustVerify
                             htmlFor="profile-phone"
                             error={profileForm.errors.phone}
                         >
-                            <InputText
+                            <PhoneField
                                 id="profile-phone"
+                                name="phone"
                                 value={profileForm.data.phone}
-                                onChange={(event) =>
-                                    profileForm.setData('phone', event.target.value)
+                                onChange={(value) =>
+                                    profileForm.setData('phone', value)
                                 }
-                                placeholder="+243 …"
-                                className={profileForm.errors.phone ? 'p-invalid' : ''}
+                                invalid={Boolean(profileForm.errors.phone)}
                             />
                         </FormField>
 

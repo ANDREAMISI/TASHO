@@ -34,6 +34,7 @@
         "react-country-state-city": "^1.1.13",
         "react-icons": "^5.7.0",
         "react-international-phone": "^4.8.0",
+        "react-phone-number-input": "^3.4.18",
         "recharts": "^3.9.0"
     }
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SubscriptionFormModal from '@/Components/Admin/SubscriptionFormModal';
 import {
     PlusIcon,
     MagnifyingGlassIcon,
@@ -14,9 +16,34 @@ import {
     ArrowPathIcon,
 } from '@/Components/Icons';
 
-export default function SubscriptionsIndex({ auth, subscriptions, filters, plans, statuses }) {
+export default function SubscriptionsIndex({
+    auth,
+    subscriptions,
+    filters,
+    plans,
+    statuses,
+    users = [],
+    billingCycles = ['monthly', 'yearly'],
+}) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+
+    const openCreate = () => {
+        setEditing(null);
+        setFormOpen(true);
+    };
+
+    const openEdit = (subscription) => {
+        setEditing(subscription);
+        setFormOpen(true);
+    };
+
+    const closeForm = () => {
+        setFormOpen(false);
+        setEditing(null);
+    };
 
     const statusColors = {
         active: 'bg-green-100 text-green-800',
@@ -43,19 +70,32 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
     };
 
     const toggleSubscription = (subscription) => {
-        if (confirm(`Voulez-vous ${subscription.status === 'active' ? 'désactiver' : 'activer'} cet abonnement ?`)) {
-            router.post(route('admin.subscriptions.toggle', subscription.id), {}, {
-                preserveScroll: true,
-            });
-        }
+        confirmDialog({
+            message: `Voulez-vous ${subscription.status === 'active' ? 'désactiver' : 'activer'} cet abonnement ?`,
+            header: subscription.status === 'active' ? "Désactiver l'abonnement" : "Activer l'abonnement",
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: subscription.status === 'active' ? 'Désactiver' : 'Activer',
+            rejectLabel: 'Annuler',
+            accept: () =>
+                router.post(route('admin.subscriptions.toggle', subscription.id), {}, {
+                    preserveScroll: true,
+                }),
+        });
     };
 
     const deleteSubscription = (subscription) => {
-        if (confirm(`Voulez-vous vraiment supprimer l'abonnement de ${subscription.user?.name} ?`)) {
-            router.delete(route('admin.subscriptions.destroy', subscription.id), {
-                preserveScroll: true,
-            });
-        }
+        confirmDialog({
+            message: `Voulez-vous vraiment supprimer l'abonnement de ${subscription.user?.name} ?`,
+            header: "Supprimer l'abonnement",
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Supprimer',
+            rejectLabel: 'Annuler',
+            acceptClassName: 'p-button-danger',
+            accept: () =>
+                router.delete(route('admin.subscriptions.destroy', subscription.id), {
+                    preserveScroll: true,
+                }),
+        });
     };
 
     // ✅ Formatage du montant en FBU
@@ -73,6 +113,8 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
         <AdminLayout user={auth.user}>
             <Head title="Abonnements - Administration" />
 
+            <ConfirmDialog />
+
             <div className="py-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Header */}
@@ -84,13 +126,14 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                             </p>
                         </div>
                         <div className="mt-4 sm:mt-0 flex items-center space-x-2">
-                            <Link
-                                href={route('admin.subscriptions.create')}
+                            <button
+                                type="button"
+                                onClick={openCreate}
                                 className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md font-medium hover:bg-tasho-primary/90 transition"
                             >
                                 <PlusIcon className="h-4 w-4 mr-2" />
                                 Nouvel abonnement
-                            </Link>
+                            </button>
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
                                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
@@ -257,13 +300,14 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                                                         >
                                                             <EyeIcon className="h-4 w-4" />
                                                         </Link>
-                                                        <Link
-                                                            href={route('admin.subscriptions.edit', subscription.id)}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openEdit(subscription)}
                                                             className="text-gray-400 hover:text-gray-600 transition"
                                                             title="Modifier"
                                                         >
                                                             <PencilIcon className="h-4 w-4" />
-                                                        </Link>
+                                                        </button>
                                                         <button
                                                             onClick={() => toggleSubscription(subscription)}
                                                             className={`transition ${
@@ -333,6 +377,16 @@ export default function SubscriptionsIndex({ auth, subscriptions, filters, plans
                     </div>
                 </div>
             </div>
+
+            <SubscriptionFormModal
+                visible={formOpen}
+                onHide={closeForm}
+                subscription={editing}
+                plans={plans}
+                users={users}
+                billingCycles={billingCycles}
+                statuses={statuses}
+            />
         </AdminLayout>
     );
 }
