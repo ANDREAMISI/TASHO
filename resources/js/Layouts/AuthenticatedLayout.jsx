@@ -45,8 +45,9 @@ const navigation = [
     },
 ];
 
-export default function AuthenticatedLayout({ children, user }) {
+export default function AuthenticatedLayout({ children, user: userProp }) {
     const { url, props, component } = usePage();
+    const user = userProp || props.auth?.user;
     const skeletonPath = usePageSkeleton();
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const preferences = props.preferences || {};

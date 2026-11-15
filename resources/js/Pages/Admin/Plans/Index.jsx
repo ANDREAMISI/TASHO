@@ -1,7 +1,7 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AdminLayout from '@/Layouts/AdminLayout';
 import PlanFormModal from '@/Components/Admin/PlanFormModal';
 import {
     PlusIcon,
@@ -91,7 +91,7 @@ export default function PlansIndex({ auth, plans }) {
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title="Plans - Administration" />
 
             <ConfirmDialog />
@@ -254,6 +254,8 @@ export default function PlansIndex({ auth, plans }) {
                 onHide={closeForm}
                 plan={editing}
             />
-        </AdminLayout>
+        </>
     );
 }
+
+PlansIndex.layout = (page) => <AdminLayout>{page}</AdminLayout>;

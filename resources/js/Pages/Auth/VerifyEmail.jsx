@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 
 export default function VerifyEmail() {
     return (
-        <GuestLayout>
+        <>
             <Head title="Email Verification" />
 
             <div className="mb-4 text-sm text-gray-600">
@@ -15,6 +15,8 @@ export default function VerifyEmail() {
                     Aller au dashboard
                 </a>
             </div>
-        </GuestLayout>
+        </>
     );
 }
+
+VerifyEmail.layout = (page) => <GuestLayout>{page}</GuestLayout>;

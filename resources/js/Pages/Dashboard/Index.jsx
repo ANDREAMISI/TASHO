@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Head } from '@inertiajs/react';
 import Button from '@/Components/Button';
 import ActivityChart from '@/Components/Dashboard/ActivityChart';
 import ActivityFeed from '@/Components/Dashboard/ActivityFeed';
@@ -43,7 +43,7 @@ export default function Dashboard({ auth, stats, team }) {
     const firstName = (auth.user?.name || '').split(' ')[0];
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Tableau de bord - TASHO" />
 
             <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -157,6 +157,8 @@ export default function Dashboard({ auth, stats, team }) {
                     <ActivityFeed activities={activity.recent} />
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+Dashboard.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

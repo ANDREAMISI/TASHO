@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 export default function Setup({ auth }) {
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Configuration du tableau de bord" />
 
             <div className="py-10">
@@ -42,6 +42,8 @@ export default function Setup({ auth }) {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+Setup.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

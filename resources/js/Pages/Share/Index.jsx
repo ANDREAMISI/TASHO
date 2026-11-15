@@ -1,3 +1,4 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useState } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import { Dropdown } from 'primereact/dropdown';
@@ -7,7 +8,6 @@ import { Password } from 'primereact/password';
 import { InputSwitch } from 'primereact/inputswitch';
 import Button from '@/Components/Button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FormDialog from '@/Components/Prime/FormDialog';
 import FormField from '@/Components/Prime/FormField';
 import {
@@ -144,7 +144,7 @@ export default function ShareIndex({ auth, projects, selectedProject, accesses =
     const accessCount = accesses.length;
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Partages - TASHO" />
 
             <ConfirmDialog />
@@ -478,6 +478,8 @@ export default function ShareIndex({ auth, projects, selectedProject, accesses =
                     </div>
                 </form>
             </FormDialog>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+ShareIndex.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

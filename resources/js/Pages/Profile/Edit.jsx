@@ -1,3 +1,4 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState } from 'react';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Avatar } from 'primereact/avatar';
@@ -7,7 +8,6 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { Password } from 'primereact/password';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import Button from '@/Components/Button';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FormDialog from '@/Components/Prime/FormDialog';
 import FormField from '@/Components/Prime/FormField';
 import PhoneField from '@/Components/PhoneField';
@@ -227,7 +227,7 @@ export default function ProfileEdit({ stats = {}, memberSince = null, mustVerify
         user.work_type === 'team' ? 'En équipe' : user.work_type === 'alone' ? 'Indépendant' : null;
 
     return (
-        <AuthenticatedLayout user={user}>
+        <>
             <Head title="Mon profil - TASHO" />
 
             <div className="mx-auto w-full max-w-5xl space-y-6">
@@ -696,6 +696,8 @@ export default function ProfileEdit({ stats = {}, memberSince = null, mustVerify
             </FormDialog>
 
             <ConfirmDialog />
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+ProfileEdit.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

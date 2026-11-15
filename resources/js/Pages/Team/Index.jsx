@@ -1,8 +1,8 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FormDialog from '@/Components/Prime/FormDialog';
 import FormField from '@/Components/Prime/FormField';
 import {
@@ -50,7 +50,7 @@ export default function TeamIndex({ auth, teams, currentTeam, openCreate = false
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Équipes - TASHO" />
 
             <div className="py-6">
@@ -211,6 +211,8 @@ export default function TeamIndex({ auth, teams, currentTeam, openCreate = false
                     </FormField>
                 </form>
             </FormDialog>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+TeamIndex.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

@@ -44,8 +44,9 @@ const navigation = [
     },
 ];
 
-export default function AdminLayout({ children, user }) {
-    const { url } = usePage();
+export default function AdminLayout({ children, user: userProp }) {
+    const { url, props } = usePage();
+    const user = userProp || props.auth?.user;
     const skeletonPath = usePageSkeleton();
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const [desktopOpen, setDesktopOpen] = useState(true);

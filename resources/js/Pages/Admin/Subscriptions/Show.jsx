@@ -1,7 +1,7 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AdminLayout from '@/Layouts/AdminLayout';
 import SubscriptionFormModal from '@/Components/Admin/SubscriptionFormModal';
 import {
     ArrowLeftIcon,
@@ -102,7 +102,7 @@ export default function SubscriptionsShow({
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title={`Abonnement ${subscription.id} - Administration`} />
 
             <ConfirmDialog />
@@ -402,6 +402,8 @@ export default function SubscriptionsShow({
                 billingCycles={billingCycles}
                 statuses={statuses}
             />
-        </AdminLayout>
+        </>
     );
 }
+
+SubscriptionsShow.layout = (page) => <AdminLayout>{page}</AdminLayout>;

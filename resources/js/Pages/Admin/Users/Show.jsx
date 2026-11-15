@@ -1,7 +1,7 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AdminLayout from '@/Layouts/AdminLayout';
 import UserFormModal from '@/Components/Admin/UserFormModal';
 import {
     ArrowLeftIcon,
@@ -49,7 +49,7 @@ export default function UsersShow({ auth, user }) {
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title={`${user.name} - Administration`} />
 
             <ConfirmDialog />
@@ -191,6 +191,8 @@ export default function UsersShow({ auth, user }) {
                 onHide={() => setFormOpen(false)}
                 user={user}
             />
-        </AdminLayout>
+        </>
     );
 }
+
+UsersShow.layout = (page) => <AdminLayout>{page}</AdminLayout>;

@@ -1,7 +1,7 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { Dropdown } from 'primereact/dropdown';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Button from '@/Components/Button';
 import Pagination from '@/Components/Project/Pagination';
 import NotificationRow from '@/Components/Notifications/NotificationRow';
@@ -145,7 +145,7 @@ export default function NotificationsIndex({
     );
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Notifications - TASHO" />
 
             <div className="mx-auto w-full max-w-5xl space-y-5">
@@ -336,6 +336,8 @@ export default function NotificationsIndex({
                     </div>
                 </section>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+NotificationsIndex.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

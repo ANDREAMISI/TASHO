@@ -1,5 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { Head, Link } from '@inertiajs/react';
 import {
     UsersIcon,
     UserGroupIcon,
@@ -60,7 +60,7 @@ export default function AdminDashboard({ auth, stats }) {
     ];
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title="Dashboard - Administration" />
 
             <div className="py-6">
@@ -195,6 +195,8 @@ export default function AdminDashboard({ auth, stats }) {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </>
     );
 }
+
+AdminDashboard.layout = (page) => <AdminLayout>{page}</AdminLayout>;

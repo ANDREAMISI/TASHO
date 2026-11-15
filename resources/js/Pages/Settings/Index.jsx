@@ -1,9 +1,9 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { Avatar } from 'primereact/avatar';
 import { Dropdown } from 'primereact/dropdown';
 import { InputSwitch } from 'primereact/inputswitch';
 import Button from '@/Components/Button';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
     Cog6ToothIcon,
     CreditCardIcon,
@@ -64,7 +64,7 @@ export default function SettingsIndex({ user, team = null, preferences = {} }) {
     };
 
     return (
-        <AuthenticatedLayout user={user}>
+        <>
             <Head title="Paramètres - TASHO" />
 
             <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -274,6 +274,8 @@ export default function SettingsIndex({ user, team = null, preferences = {} }) {
                     passe dans votre profil.
                 </p>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+SettingsIndex.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

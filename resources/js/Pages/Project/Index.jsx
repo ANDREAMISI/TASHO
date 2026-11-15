@@ -1,9 +1,9 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react';
 import { Dropdown } from 'primereact/dropdown';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import StatsCard from '@/Components/Dashboard/StatsCard';
 import Pagination from '@/Components/Project/Pagination';
 import FolderIllustration from '@/Components/Project/FolderIllustration';
@@ -266,7 +266,7 @@ export default function ProjectIndex({
     const hasFilters = Boolean(filters.search || filters.status || filters.priority);
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Projets - TASHO" />
 
             <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -471,6 +471,8 @@ export default function ProjectIndex({
             />
 
             <ConfirmDialog />
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+ProjectIndex.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

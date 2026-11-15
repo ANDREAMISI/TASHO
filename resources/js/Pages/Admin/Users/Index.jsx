@@ -1,7 +1,7 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AdminLayout from '@/Layouts/AdminLayout';
 import UserFormModal from '@/Components/Admin/UserFormModal';
 import {
     MagnifyingGlassIcon,
@@ -60,7 +60,7 @@ export default function UsersIndex({ auth, users }) {
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title="Utilisateurs - Administration" />
 
             <ConfirmDialog />
@@ -249,6 +249,8 @@ export default function UsersIndex({ auth, users }) {
                 onHide={closeForm}
                 user={editing}
             />
-        </AdminLayout>
+        </>
     );
 }
+
+UsersIndex.layout = (page) => <AdminLayout>{page}</AdminLayout>;

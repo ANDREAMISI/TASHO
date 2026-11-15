@@ -1,6 +1,6 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import AdminLayout from '@/Layouts/AdminLayout';
 import {
     MagnifyingGlassIcon,
     EyeIcon,
@@ -57,7 +57,7 @@ export default function AdminActivityIndex({ auth, logs, filters }) {
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title="Activité - Administration" />
 
             <div className="py-6">
@@ -193,6 +193,8 @@ export default function AdminActivityIndex({ auth, logs, filters }) {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </>
     );
 }
+
+AdminActivityIndex.layout = (page) => <AdminLayout>{page}</AdminLayout>;

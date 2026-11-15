@@ -1,9 +1,9 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { InputText } from 'primereact/inputtext';
 import Button from '@/Components/Button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Pagination from '@/Components/Project/Pagination';
 import ClientFormModal from '@/Components/Client/ClientFormModal';
 import {
@@ -82,7 +82,7 @@ export default function ClientIndex({ auth, clients, filters = {}, team }) {
     const hasSearch = Boolean(filters.search);
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Clients - TASHO" />
 
             <ConfirmDialog />
@@ -286,6 +286,8 @@ export default function ClientIndex({ auth, clients, filters = {}, team }) {
             </div>
 
             <ClientFormModal visible={formOpen} onHide={closeForm} client={editing} />
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+ClientIndex.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

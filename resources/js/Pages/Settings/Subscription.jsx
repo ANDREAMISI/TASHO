@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 
 export default function SubscriptionSettings({ auth, user }) {
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Abonnement" />
 
             <div className="py-8">
@@ -25,6 +25,8 @@ export default function SubscriptionSettings({ auth, user }) {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+SubscriptionSettings.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

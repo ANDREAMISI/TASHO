@@ -1,10 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { Head, Link } from '@inertiajs/react';
 import { ClockIcon, ArrowRightIcon } from '@/Components/Icons';
 
 export default function InvitationExpired({ invitation }) {
     return (
-        <GuestLayout>
+        <>
             <Head title="Invitation expirée - TASHO" />
 
             <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -41,6 +41,8 @@ export default function InvitationExpired({ invitation }) {
                     </div>
                 </div>
             </div>
-        </GuestLayout>
+        </>
     );
 }
+
+InvitationExpired.layout = (page) => <GuestLayout>{page}</GuestLayout>;

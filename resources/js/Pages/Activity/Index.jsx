@@ -1,3 +1,4 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useMemo, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Avatar } from 'primereact/avatar';
@@ -11,7 +12,6 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Button from '@/Components/Button';
 import Pagination from '@/Components/Project/Pagination';
 import { activityMeta } from '@/Components/Project/projectMeta';
@@ -379,7 +379,7 @@ export default function ActivityIndex({ logs, stats = {}, filters = {}, actions 
         (stats.members || 0) + (stats.visitors || 0);
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Activité - TASHO" />
 
             <div className={`mx-auto w-full max-w-6xl space-y-5 ${processing ? 'opacity-70' : ''}`}>
@@ -790,6 +790,8 @@ export default function ActivityIndex({ logs, stats = {}, filters = {}, actions 
                     </div>
                 </section>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+ActivityIndex.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

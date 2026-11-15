@@ -1,6 +1,6 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { Tag } from 'primereact/tag';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ActivityTab from '@/Components/Project/ActivityTab';
 import FilesTab from '@/Components/Project/FilesTab';
 import OverviewTab from '@/Components/Project/OverviewTab';
@@ -66,7 +66,7 @@ export default function ProjectShow({
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title={`${project.title} - TASHO`} />
 
             <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -239,6 +239,8 @@ export default function ProjectShow({
                     />
                 )}
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+ProjectShow.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

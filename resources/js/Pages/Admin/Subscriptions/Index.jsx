@@ -1,7 +1,7 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AdminLayout from '@/Layouts/AdminLayout';
 import SubscriptionFormModal from '@/Components/Admin/SubscriptionFormModal';
 import {
     PlusIcon,
@@ -110,7 +110,7 @@ export default function SubscriptionsIndex({
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title="Abonnements - Administration" />
 
             <ConfirmDialog />
@@ -387,6 +387,8 @@ export default function SubscriptionsIndex({
                 billingCycles={billingCycles}
                 statuses={statuses}
             />
-        </AdminLayout>
+        </>
     );
 }
+
+SubscriptionsIndex.layout = (page) => <AdminLayout>{page}</AdminLayout>;

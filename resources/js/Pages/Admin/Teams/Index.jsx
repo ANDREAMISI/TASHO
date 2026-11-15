@@ -1,7 +1,7 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AdminLayout from '@/Layouts/AdminLayout';
 import {
     MagnifyingGlassIcon,
     EyeIcon,
@@ -37,7 +37,7 @@ export default function TeamsIndex({ auth, teams }) {
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title="Équipes - Administration" />
 
             <ConfirmDialog />
@@ -156,6 +156,8 @@ export default function TeamsIndex({ auth, teams }) {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </>
     );
 }
+
+TeamsIndex.layout = (page) => <AdminLayout>{page}</AdminLayout>;

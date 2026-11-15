@@ -1,3 +1,4 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useMemo, useState } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import { Dropdown } from 'primereact/dropdown';
@@ -5,7 +6,6 @@ import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import Button from '@/Components/Button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FormDialog from '@/Components/Prime/FormDialog';
 import FormField from '@/Components/Prime/FormField';
 import {
@@ -224,7 +224,7 @@ export default function TeamShow({ auth, team, members, invitations, canManage, 
     const pendingCount = invitations.length;
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title={`${team.name} - TASHO`} />
 
             <ConfirmDialog />
@@ -666,6 +666,8 @@ export default function TeamShow({ auth, team, members, invitations, canManage, 
                     </FormField>
                 </form>
             </FormDialog>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+TeamShow.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;

@@ -1,6 +1,6 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import AdminLayout from '@/Layouts/AdminLayout';
 import {
     ArrowLeftIcon,
     UserGroupIcon,
@@ -32,7 +32,7 @@ export default function TeamsShow({ auth, team }) {
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title={`${team.name} - Administration`} />
 
             <ConfirmDialog />
@@ -162,6 +162,8 @@ export default function TeamsShow({ auth, team }) {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </>
     );
 }
+
+TeamsShow.layout = (page) => <AdminLayout>{page}</AdminLayout>;

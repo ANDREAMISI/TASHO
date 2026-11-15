@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { Head } from '@inertiajs/react';
 import StatsCard from '@/Components/Dashboard/StatsCard';
 import ActivityFeed from '@/Components/Dashboard/ActivityFeed';
 
@@ -7,7 +7,7 @@ export default function AdminDashboard({ auth, stats }) {
     const { users, teams, subscriptions, storage, activity, recent_users } = stats;
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title="Admin Dashboard - TASHO" />
 
             <div className="py-6">
@@ -118,6 +118,8 @@ export default function AdminDashboard({ auth, stats }) {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </>
     );
 }
+
+AdminDashboard.layout = (page) => <AdminLayout>{page}</AdminLayout>;

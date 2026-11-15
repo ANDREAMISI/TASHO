@@ -1,6 +1,6 @@
+import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import { Head } from '@inertiajs/react';
-import AdminLayout from '@/Layouts/AdminLayout';
 import SettingsFormModal from '@/Components/Admin/SettingsFormModal';
 import {
     Cog6ToothIcon,
@@ -39,7 +39,7 @@ export default function AdminSettings({ auth }) {
     ];
 
     return (
-        <AdminLayout user={auth.user}>
+        <>
             <Head title="Paramètres - Administration" />
 
             <div className="py-6">
@@ -108,6 +108,8 @@ export default function AdminSettings({ auth }) {
                 visible={formOpen}
                 onHide={() => setFormOpen(false)}
             />
-        </AdminLayout>
+        </>
     );
 }
+
+AdminSettings.layout = (page) => <AdminLayout>{page}</AdminLayout>;

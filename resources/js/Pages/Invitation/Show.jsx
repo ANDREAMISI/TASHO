@@ -1,5 +1,5 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { 
     UserGroupIcon, 
     UserIcon, 
@@ -41,7 +41,7 @@ export default function InvitationShow({ invitation, user, hasAccount }) {
     };
 
     return (
-        <GuestLayout>
+        <>
             <Head title="Invitation - TASHO" />
 
             <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -187,6 +187,8 @@ export default function InvitationShow({ invitation, user, hasAccount }) {
                     </div>
                 </div>
             </div>
-        </GuestLayout>
+        </>
     );
 }
+
+InvitationShow.layout = (page) => <GuestLayout>{page}</GuestLayout>;

@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 
 export default function Dashboard({ auth, user }) {
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <>
             <Head title="Dashboard - TASHO" />
 
             <div className="py-6">
@@ -116,6 +116,8 @@ export default function Dashboard({ auth, user }) {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
+
+Dashboard.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;
