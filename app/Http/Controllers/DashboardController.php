@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
 use App\Services\DashboardService;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -42,6 +44,7 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard/Index', [
             'stats' => $stats,
             'team' => $team,
+            'canCreateProjects' => Gate::allows('create', [Project::class, $team]),
         ]);
     }
 

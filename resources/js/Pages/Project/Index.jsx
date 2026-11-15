@@ -192,21 +192,22 @@ export default function ProjectIndex({
     filters,
     summary,
     team,
+    canCreateProjects = false,
     clients = [],
     openCreate = false,
 }) {
     const [search, setSearch] = useState(filters.search || '');
-    const [createOpen, setCreateOpen] = useState(Boolean(openCreate));
+    const [createOpen, setCreateOpen] = useState(Boolean(openCreate && canCreateProjects));
 
     useEffect(() => {
         setSearch(filters.search || '');
     }, [filters.search]);
 
     useEffect(() => {
-        if (openCreate) {
+        if (openCreate && canCreateProjects) {
             setCreateOpen(true);
         }
-    }, [openCreate]);
+    }, [openCreate, canCreateProjects]);
 
     const visit = (overrides = {}) => {
         const params = {
@@ -282,16 +283,18 @@ export default function ProjectIndex({
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setCreateOpen(true)}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
-                        >
-                            <PlusIcon className="h-4 w-4" />
-                            Nouveau projet
-                        </button>
-                    </div>
+                    {canCreateProjects && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setCreateOpen(true)}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-tasho-primary px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-tasho-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-tasho-primary focus-visible:ring-offset-2"
+                            >
+                                <PlusIcon className="h-4 w-4" />
+                                Nouveau projet
+                            </button>
+                        </div>
+                    )}
                 </header>
 
                 {/* Indicateurs */}
@@ -436,7 +439,9 @@ export default function ProjectIndex({
                         <p className="mt-1 text-xs text-gray-500">
                             {hasFilters
                                 ? 'Modifiez la recherche ou réinitialisez les filtres.'
-                                : 'Créez votre premier projet pour organiser et partager des fichiers.'}
+                                : canCreateProjects
+                                  ? 'Créez votre premier projet pour organiser et partager des fichiers.'
+                                  : 'Aucun projet n’a encore été ajouté à cette équipe.'}
                         </p>
 
                         {hasFilters ? (
@@ -447,7 +452,7 @@ export default function ProjectIndex({
                             >
                                 Effacer les filtres
                             </button>
-                        ) : (
+                        ) : canCreateProjects ? (
                             <button
                                 type="button"
                                 onClick={() => setCreateOpen(true)}
@@ -456,7 +461,7 @@ export default function ProjectIndex({
                                 <PlusIcon className="h-4 w-4" />
                                 Créer un projet
                             </button>
-                        )}
+                        ) : null}
                     </div>
                 )}
 
@@ -464,7 +469,7 @@ export default function ProjectIndex({
             </div>
 
             <ProjectFormModal
-                visible={createOpen}
+                visible={createOpen && canCreateProjects}
                 onHide={() => setCreateOpen(false)}
                 clients={clients}
                 teamName={team?.name}

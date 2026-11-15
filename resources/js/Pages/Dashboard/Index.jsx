@@ -36,7 +36,7 @@ function todayLabel() {
     }).format(new Date());
 }
 
-export default function Dashboard({ auth, stats, team }) {
+export default function Dashboard({ auth, stats, team, canCreateProjects = false }) {
     const { projects, files, clients, storage, activity, recent_projects: recentProjects } =
         stats;
 
@@ -69,13 +69,15 @@ export default function Dashboard({ auth, stats, team }) {
                             Voir les projets
                         </Button>
 
-                        <Button
-                            href={route('projects.index', { create: 1 })}
-                            variant="primary"
-                        >
-                            <PlusIcon className="h-4 w-4" />
-                            Nouveau projet
-                        </Button>
+                        {canCreateProjects && (
+                            <Button
+                                href={route('projects.index', { create: 1 })}
+                                variant="primary"
+                            >
+                                <PlusIcon className="h-4 w-4" />
+                                Nouveau projet
+                            </Button>
+                        )}
                     </div>
                 </header>
 

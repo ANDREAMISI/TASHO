@@ -49,6 +49,7 @@ export default function FilesTab({
     filters = {},
     folderOptions = [],
     canManage = false,
+    canDeleteFolders = false,
     canUpload = false,
 }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -555,26 +556,30 @@ export default function FilesTab({
                                     </span>
                                 </button>
 
-                                {canManage && (
+                                {(canManage || canDeleteFolders) && (
                                     <div className="absolute right-1 top-1 flex items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-                                        <button
-                                            type="button"
-                                            onClick={() => openRenameFolder(folder)}
-                                            title="Renommer le dossier"
-                                            className="flex h-7 w-7 items-center justify-center rounded-md bg-white/90 text-gray-500 shadow-sm ring-1 ring-gray-200 transition hover:text-gray-800"
-                                        >
-                                            <PencilIcon className="h-3.5 w-3.5" />
-                                        </button>
-
-                                        {folder.files_count === 0 && folder.children_count === 0 && (
+                                        {canManage && (
                                             <button
                                                 type="button"
-                                                onClick={() => deleteFolder(folder)}
-                                                title="Supprimer le dossier"
-                                                className="flex h-7 w-7 items-center justify-center rounded-md bg-white/90 text-red-500 shadow-sm ring-1 ring-gray-200 transition hover:text-red-600"
+                                                onClick={() => openRenameFolder(folder)}
+                                                title="Renommer le dossier"
+                                                className="flex h-7 w-7 items-center justify-center rounded-md bg-white/90 text-gray-500 shadow-sm ring-1 ring-gray-200 transition hover:text-gray-800"
                                             >
-                                                <TrashIcon className="h-3.5 w-3.5" />
+                                                <PencilIcon className="h-3.5 w-3.5" />
                                             </button>
+                                        )}
+
+                                        {canDeleteFolders &&
+                                            folder.files_count === 0 &&
+                                            folder.children_count === 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => deleteFolder(folder)}
+                                                    title="Supprimer le dossier"
+                                                    className="flex h-7 w-7 items-center justify-center rounded-md bg-white/90 text-red-500 shadow-sm ring-1 ring-gray-200 transition hover:text-red-600"
+                                                >
+                                                    <TrashIcon className="h-3.5 w-3.5" />
+                                                </button>
                                         )}
                                     </div>
                                 )}
@@ -690,26 +695,26 @@ export default function FilesTab({
                                                     <ArrowDownTrayIcon className="h-4 w-4" />
                                                 </button>
 
-                                                {file.can_delete && (
-                                                    <>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openRenameFile(file)}
-                                                            title="Renommer"
-                                                            className="rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-                                                        >
-                                                            <PencilIcon className="h-4 w-4" />
-                                                        </button>
+                                                {file.can_update && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openRenameFile(file)}
+                                                        title="Renommer"
+                                                        className="rounded-md p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                                                    >
+                                                        <PencilIcon className="h-4 w-4" />
+                                                    </button>
+                                                )}
 
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => deleteFile(file)}
-                                                            title="Supprimer"
-                                                            className="rounded-md p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
-                                                        >
-                                                            <TrashIcon className="h-4 w-4" />
-                                                        </button>
-                                                    </>
+                                                {file.can_delete && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteFile(file)}
+                                                        title="Supprimer"
+                                                        className="rounded-md p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                                                    >
+                                                        <TrashIcon className="h-4 w-4" />
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>

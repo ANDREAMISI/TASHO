@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Project;
+use App\Models\Team;
 use App\Models\User;
 
 class ProjectPolicy
@@ -10,18 +11,31 @@ class ProjectPolicy
     public function view(User $user, Project $project): bool
     {
         if ($user->email === 'admin@tasho.com') return true;
-        return $project->isOwner($user) || $project->hasMember($user);
+
+        $team = $project->team;
+
+        return $project->isOwner($user)
+            || $project->hasMember($user)
+            || $team->isOwner($user)
+            || $team->hasMember($user);
     }
 
     public function create(User $user, Team $team): bool
     {
-        return $user->email === 'admin@tasho.com' || $team->hasMember($user);
+        return $user->email === 'admin@tasho.com'
+            || $team->isOwner($user)
+            || in_array($team->getMemberRole($user), ['manager', 'editor'], true);
     }
 
     public function update(User $user, Project $project): bool
     {
         if ($user->email === 'admin@tasho.com') return true;
-        return $project->isOwner($user);
+
+        $team = $project->team;
+
+        return $project->isOwner($user)
+            || $team->isOwner($user)
+            || $team->getMemberRole($user) === 'manager';
     }
 
     public function delete(User $user, Project $project): bool

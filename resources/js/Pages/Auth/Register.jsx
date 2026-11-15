@@ -35,7 +35,12 @@ const stepMotion = {
     transition: { duration: 0.28, ease: "easeOut" },
 };
 
-export default function Register({ professions, workTypes, storageVolumes }) {
+export default function Register({
+    professions,
+    workTypes,
+    storageVolumes,
+    invitationToken,
+}) {
     const [step, setStep] = useState(1);
     const [clientErrors, setClientErrors] = useState({});
     const [phoneCountry, setPhoneCountry] = useState(null);
@@ -52,6 +57,7 @@ export default function Register({ professions, workTypes, storageVolumes }) {
         profession: "",
         work_type: "alone",
         storage_volume: "",
+        invitation_token: invitationToken ?? "",
     });
 
     useEffect(() => {
@@ -222,8 +228,8 @@ export default function Register({ professions, workTypes, storageVolumes }) {
                             className="flex justify-center my-1 md:my-2 relative"
                         >
                             <motion.img
-                                src="/Images/img-register1.png"
-                                alt="Hero"
+                                src="/Images/register12.png"
+                                alt="Illustration d'inscription"
                                 className="w-full max-h-[300px] md:max-h-[400px] object-contain mx-auto relative z-10"
                             />
                         </motion.div>

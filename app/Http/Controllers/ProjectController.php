@@ -123,6 +123,7 @@ class ProjectController extends Controller
             'projects' => $projects,
             'filters' => $filters,
             'summary' => $this->projectService->getIndexSummary($team),
+            'canCreateProjects' => Gate::allows('create', [Project::class, $team]),
             'statuses' => $statuses,
             'priorities' => $priorities,
             'team' => ['id' => $team->id, 'name' => $team->name],
@@ -145,7 +146,9 @@ class ProjectController extends Controller
             return back()->withErrors(['message' => 'Aucune équipe trouvée.']);
         }
 
-        $request->validate([
+        Gate::authorize('create', [Project::class, $team]);
+
+        $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'client_id' => 'nullable|exists:clients,id',
@@ -160,7 +163,7 @@ class ProjectController extends Controller
         $project = $this->projectService->createProject(
             $team,
             $user,
-            $request->all()
+            $data
         );
 
         // Créer les dossiers par défaut
@@ -177,7 +180,12 @@ class ProjectController extends Controller
     {
         Gate::authorize('view', $project);
 
-        $tabs = ['overview', 'files', 'activity', 'shares'];
+        $tabs = ['overview', 'files', 'activity'];
+
+        if (Gate::allows('manage-project', $project)) {
+            $tabs[] = 'shares';
+        }
+
         $tab = (string) $request->input('tab', 'overview');
 
         if (! in_array($tab, $tabs, true)) {
@@ -215,6 +223,8 @@ class ProjectController extends Controller
             'tab' => $tab,
             'canManage' => Gate::allows('update', $project),
             'canManageMembers' => Gate::allows('manageMembers', $project),
+            'canManageShares' => Gate::allows('manage-project', $project),
+            'canDeleteFolders' => Gate::allows('delete', $project),
             'canUpload' => Gate::allows('create', [\App\Models\File::class, $project]),
             'folderTree' => $this->projectService->getFolderTree($project),
             'currentFolderId' => null,
@@ -365,7 +375,7 @@ class ProjectController extends Controller
     {
         Gate::authorize('update', $project);
 
-        $request->validate([
+        $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'client_name' => 'nullable|string|max:255',
@@ -376,7 +386,7 @@ class ProjectController extends Controller
             'end_date' => 'nullable|date|after:start_date',
         ]);
 
-        $project->update($request->all());
+        $project->update($data);
 
         return back()->with('success', 'Projet mis à jour avec succès !');
     }
@@ -421,7 +431,7 @@ class ProjectController extends Controller
      */
     public function deleteFolder(Folder $folder)
     {
-        Gate::authorize('update', $folder->project);
+        Gate::authorize('delete', $folder->project);
 
         $folder->delete();
 

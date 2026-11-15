@@ -11,6 +11,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Support\FileCategory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class ProjectService
@@ -443,11 +444,6 @@ class ProjectService
      */
     private function mapFile(File $file, Project $project): array
     {
-        $user = auth()->user();
-        $canDelete = $file->user_id === $user?->id
-            || $project->owner_id === $user?->id
-            || $user?->email === 'admin@tasho.com';
-
         return [
             'id' => $file->id,
             'name' => $file->name,
@@ -466,7 +462,8 @@ class ProjectService
             'is_document' => $file->isDocument(),
             'is_previewable' => $file->isPreviewable(),
             'is_favorited' => (bool) $file->is_favorited,
-            'can_delete' => $canDelete,
+            'can_update' => Gate::allows('update', $file),
+            'can_delete' => Gate::allows('delete', $file),
             'user' => $file->user ? ['id' => $file->user->id, 'name' => $file->user->name] : null,
             'folder' => $file->folder ? ['id' => $file->folder->id, 'name' => $file->folder->name] : null,
             'download_count' => (int) $file->download_count,

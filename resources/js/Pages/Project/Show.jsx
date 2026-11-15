@@ -33,6 +33,8 @@ export default function ProjectShow({
     tab = 'overview',
     canManage = false,
     canManageMembers = false,
+    canManageShares = false,
+    canDeleteFolders = false,
     canUpload = false,
     members = [],
     teamMembers = [],
@@ -123,7 +125,7 @@ export default function ProjectShow({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        {canManage && (
+                        {canManageShares && (
                             <button
                                 type="button"
                                 onClick={() => openTab('shares')}
@@ -154,7 +156,9 @@ export default function ProjectShow({
                         aria-label="Sections du projet"
                         className="-mb-px flex gap-1 overflow-x-auto"
                     >
-                        {TABS.map((item) => {
+                        {TABS.filter(
+                            (item) => item.key !== 'shares' || canManageShares,
+                        ).map((item) => {
                             const Icon = item.icon;
                             const active = tab === item.key;
                             const count = item.countKey ? stats[item.countKey] : null;
@@ -217,6 +221,7 @@ export default function ProjectShow({
                         filters={filters}
                         folderOptions={folderOptions}
                         canManage={canManage}
+                        canDeleteFolders={canDeleteFolders}
                         canUpload={canUpload}
                     />
                 )}
@@ -235,7 +240,7 @@ export default function ProjectShow({
                         project={project}
                         accesses={accesses}
                         clients={clients}
-                        canManage={canManage}
+                        canManage={canManageShares}
                     />
                 )}
             </div>

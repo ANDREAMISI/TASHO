@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Services\AuditService;
 use App\Services\FileService;
 use App\Support\FileCategory;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
@@ -99,6 +100,8 @@ class FileController extends Controller
             }
 
             return back()->with('success', 'Fichier uploadé avec succès !');
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'upload:', [
                 'message' => $e->getMessage(),
@@ -218,6 +221,8 @@ class FileController extends Controller
                 'uploaded' => true,
                 'chunk_index' => $request->chunk_index,
             ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Erreur upload chunk:', [
                 'message' => $e->getMessage(),

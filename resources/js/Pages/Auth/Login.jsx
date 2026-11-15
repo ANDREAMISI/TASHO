@@ -187,8 +187,8 @@ export default function Login({ status }) {
                             </motion.div>
 
                             <motion.img
-                                src="/Images/hero-logo2.png"
-                                alt="Hero"
+                                src="/Images/login12.png"
+                                alt="Illustration de connexion"
                                 className="relative z-10 mx-auto w-full max-h-[240px] object-contain md:max-h-[320px]"
                                 animate={{
                                     filter: ["drop-shadow(0 0 0px rgba(59,130,246,0))", "drop-shadow(0 0 20px rgba(59,130,246,0.4))", "drop-shadow(0 0 0px rgba(59,130,246,0))"],

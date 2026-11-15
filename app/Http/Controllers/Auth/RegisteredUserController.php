@@ -134,6 +134,10 @@ class RegisteredUserController extends Controller
                 ]);
         }
 
+        if ($joinedTeam && $invitation) {
+            return redirect()->route('team.show', $invitation->team);
+        }
+
         return redirect(route('dashboard', absolute: false));
     }
 }
