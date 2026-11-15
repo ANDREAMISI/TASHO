@@ -13,9 +13,8 @@ import {
     FaUser,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { PhoneInput } from "react-international-phone";
-import "react-international-phone/style.css";
 import { isValidPhoneNumber } from "libphonenumber-js";
+import PhoneField from "@/Components/PhoneField";
 import { CountrySelect } from "react-country-state-city";
 import "react-country-state-city/dist/react-country-state-city.css";
 
@@ -418,41 +417,23 @@ export default function Register({ professions, workTypes, storageVolumes }) {
                                                 value="Téléphone"
                                                 className="!text-gray-200"
                                             />
-                                            <div className="phone-field mt-1.5">
-                                                <PhoneInput
-                                                    defaultCountry="bi"
+                                            <div className="mt-1.5">
+                                                <PhoneField
+                                                    id="phone"
+                                                    name="phone"
                                                     value={data.phone}
-                                                    onChange={(phone, meta) => {
-                                                        setPhoneCountry(meta.country);
-
-                                                        const dialDigits = String(
-                                                            meta.country.dialCode,
+                                                    onChange={(value, meta) => {
+                                                        setPhoneCountry(
+                                                            meta.country,
                                                         );
-                                                        const digits = phone.replace(
-                                                            /\D/g,
-                                                            "",
-                                                        );
-                                                        const normalized =
-                                                            phone.replace(
-                                                                /[^\d+]/g,
-                                                                "",
-                                                            );
-
                                                         update(
                                                             "phone",
-                                                            digits.length >
-                                                                dialDigits.length
-                                                                ? normalized
-                                                                : "",
+                                                            value,
                                                         );
                                                     }}
-                                                    inputProps={{
-                                                        id: "phone",
-                                                        name: "phone",
-                                                        autoComplete: "tel",
-                                                    }}
+                                                    variant="dark"
+                                                    defaultCountry="bi"
                                                     placeholder="Numéro de téléphone"
-                                                    className="w-full"
                                                 />
                                             </div>
                                             <p className="mt-1.5 text-xs text-gray-500">

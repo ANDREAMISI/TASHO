@@ -45,7 +45,7 @@ export default function ConfirmPassword() {
                 </div>
 
                 <div className="mt-4 flex items-center justify-end">
-                    <Button type="submit" variant="dark" className="ms-4" disabled={processing}>
+                    <Button type="submit" variant="dark" className="ms-4" loading={processing} disabled={processing}>
                         Confirm
                     </Button>
                 </div>

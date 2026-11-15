@@ -1,4 +1,5 @@
-import PhoneInput, { parsePhoneNumber } from 'react-phone-number-input';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import { PhoneInput } from 'react-international-phone';
 
 /**
  * Normalise une valeur héritée vers le format E.164 attendu par la librairie.
@@ -6,17 +7,25 @@ import PhoneInput, { parsePhoneNumber } from 'react-phone-number-input';
  */
 function normalizeValue(value, defaultCountry) {
     if (!value) {
-        return undefined;
+        return '';
     }
 
     const trimmed = String(value).trim();
-    const parsed = parsePhoneNumber(trimmed, defaultCountry);
 
-    return parsed?.number || undefined;
+    if (trimmed.startsWith('+')) {
+        return `+${trimmed.replace(/\D/g, '')}`;
+    }
+
+    const parsed = parsePhoneNumberFromString(
+        trimmed,
+        String(defaultCountry).toUpperCase(),
+    );
+
+    return parsed?.number || trimmed;
 }
 
 /**
- * Champ téléphone basé sur react-phone-number-input.
+ * Champ téléphone basé sur react-international-phone.
  * La valeur transmise au formulaire est au format international E.164 (+243…).
  *
  * variant : "prime" pour les formulaires PrimeReact, "dark" pour les pages d'authentification.
@@ -26,7 +35,7 @@ export default function PhoneField({
     name,
     value,
     onChange,
-    placeholder = '+243 81 234 5678',
+    placeholder = 'Numéro de téléphone',
     variant = 'prime',
     invalid = false,
     disabled = false,
@@ -38,34 +47,43 @@ export default function PhoneField({
         'tasho-phone-input',
         `tasho-phone-input--${variant}`,
         invalid ? 'tasho-phone-input--invalid' : '',
+        disabled ? 'tasho-phone-input--disabled' : '',
         className,
     ]
         .filter(Boolean)
         .join(' ');
 
+    // react-international-phone attend un code ISO2 en minuscules (« cd »),
+    // alors que libphonenumber-js attend des majuscules (« CD »).
+    const country = String(defaultCountry).toLowerCase();
+
+    const handleChange = (phone, meta) => {
+        const dialDigits = String(meta.country.dialCode);
+        const digits = phone.replace(/\D/g, '');
+        const normalized = phone.replace(/[^\d+]/g, '');
+
+        // Uniquement le code pays (ex. « +243 ») ne compte pas comme un numéro.
+        onChange?.(
+            digits.length > dialDigits.length ? normalized : '',
+            meta,
+        );
+    };
+
     return (
-        <PhoneInput
-            id={id}
-            name={name}
-            value={normalizeValue(value, defaultCountry)}
-            onChange={(nextValue) => onChange?.(nextValue || '')}
-            defaultCountry={defaultCountry}
-            countryCallingCodeEditable={false}
-            placeholder={placeholder}
-            disabled={disabled}
-            autoComplete={autoComplete}
-            labels={{
-                country: 'Choisir un pays',
-                phone: 'Numéro de téléphone',
-            }}
-            className={classes}
-            numberInputProps={{
-                id,
-                name,
-                autoComplete,
-                disabled,
-                className: 'tasho-phone-input__input',
-            }}
-        />
+        <div className={classes}>
+            <PhoneInput
+                value={normalizeValue(value, defaultCountry)}
+                onChange={handleChange}
+                defaultCountry={country}
+                placeholder={placeholder}
+                disabled={disabled}
+                inputProps={{
+                    id,
+                    name,
+                    autoComplete,
+                    disabled,
+                }}
+            />
+        </div>
     );
 }

@@ -5,7 +5,9 @@ import Button from '@/Components/Button';
 import { Sidebar } from 'primereact/sidebar';
 import AppTopbar from '@/Components/AppTopbar';
 import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';
+import PageSkeleton from '@/Components/Skeleton/PageSkeleton';
 import useMediaQuery from '@/hooks/useMediaQuery';
+import usePageSkeleton from '@/hooks/usePageSkeleton';
 import {
     ArrowRightOnRectangleIcon,
     ChartBarIcon,
@@ -44,6 +46,7 @@ const navigation = [
 
 export default function AdminLayout({ children, user }) {
     const { url } = usePage();
+    const skeletonPath = usePageSkeleton();
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const [desktopOpen, setDesktopOpen] = useState(true);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -182,7 +185,13 @@ export default function AdminLayout({ children, user }) {
                     userMenuItems={userMenuItems}
                 />
 
-                <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+                <main className="p-4 sm:p-6 lg:p-8">
+                    {skeletonPath ? (
+                        <PageSkeleton path={skeletonPath} />
+                    ) : (
+                        children
+                    )}
+                </main>
             </div>
         </div>
     );

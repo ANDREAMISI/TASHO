@@ -8,7 +8,9 @@ import SidebarNavGroup, { isLinkActive } from '@/Components/SidebarNavGroup';
 import SidebarPlanCard from '@/Components/SidebarPlanCard';
 import SidebarProjectNav from '@/Components/SidebarProjectNav';
 import { ToastProvider } from '@/Components/Prime/ToastProvider';
+import PageSkeleton from '@/Components/Skeleton/PageSkeleton';
 import useMediaQuery from '@/hooks/useMediaQuery';
+import usePageSkeleton from '@/hooks/usePageSkeleton';
 import {
     ArrowRightOnRectangleIcon,
     ChartBarIcon,
@@ -45,6 +47,7 @@ const navigation = [
 
 export default function AuthenticatedLayout({ children, user }) {
     const { url, props, component } = usePage();
+    const skeletonPath = usePageSkeleton();
     const isDesktop = useMediaQuery('(min-width: 1024px)');
     const preferences = props.preferences || {};
     const sidebarOpenPreference = preferences.sidebar_open !== false;
@@ -224,7 +227,13 @@ export default function AuthenticatedLayout({ children, user }) {
                     userMenuItems={userMenuItems}
                 />
 
-                <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+                <main className="p-4 sm:p-6 lg:p-8">
+                    {skeletonPath ? (
+                        <PageSkeleton path={skeletonPath} />
+                    ) : (
+                        children
+                    )}
+                </main>
             </div>
             </div>
         </ToastProvider>

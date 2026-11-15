@@ -542,9 +542,70 @@ textarea,
 
 /* ============================================================
    Champ téléphone international (react-international-phone)
-   Thème sombre de la page d'inscription.
+   Utilisé par le composant partagé PhoneField : variantes
+   PrimeReact (claire) et sombre pour les pages d'authentification.
    ============================================================ */
-.phone-field {
+.tasho-phone-input {
+    --react-international-phone-height: 2.75rem;
+    --react-international-phone-border-radius: 6px;
+    --react-international-phone-border-color: #ced4da;
+    --react-international-phone-background-color: #ffffff;
+    --react-international-phone-text-color: #495057;
+    --react-international-phone-font-size: 1rem;
+    --react-international-phone-country-selector-background-color: #ffffff;
+    --react-international-phone-country-selector-background-color-hover: #f3f4f6;
+    --react-international-phone-country-selector-border-color: #ced4da;
+    --react-international-phone-country-selector-arrow-color: #6b7280;
+    --react-international-phone-dropdown-item-background-color: #ffffff;
+    --react-international-phone-dropdown-item-text-color: #495057;
+    --react-international-phone-dropdown-item-dial-code-color: #6b7280;
+    --react-international-phone-selected-dropdown-item-background-color: #e8f4fb;
+    --react-international-phone-selected-dropdown-item-text-color: #0f172a;
+    --react-international-phone-dropdown-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+    --react-international-phone-dropdown-item-height: 34px;
+    --react-international-phone-flag-width: 20px;
+    --react-international-phone-flag-height: 20px;
+
+    width: 100%;
+}
+
+.tasho-phone-input .react-international-phone-input-container {
+    width: 100%;
+}
+
+.tasho-phone-input .react-international-phone-input {
+    width: 100%;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.tasho-phone-input .react-international-phone-input:focus {
+    border-color: #1b9cd8;
+    box-shadow: 0 0 0 2px rgba(27, 156, 216, 0.18);
+    outline: none;
+}
+
+.tasho-phone-input .react-international-phone-country-selector-button {
+    padding: 0 0.6rem;
+}
+
+.tasho-phone-input .react-international-phone-country-selector-dropdown {
+    min-width: 260px;
+}
+
+/* État invalide, aligné sur les champs PrimeReact. */
+.tasho-phone-input--invalid .react-international-phone-input,
+.tasho-phone-input--invalid .react-international-phone-country-selector-button {
+    border-color: #e24c4c;
+}
+
+.tasho-phone-input--invalid .react-international-phone-input:focus {
+    border-color: #e24c4c;
+    box-shadow: 0 0 0 2px rgba(226, 76, 76, 0.16);
+}
+
+/* Variante sombre des pages d'authentification. */
+.tasho-phone-input--dark {
     --react-international-phone-height: 40px;
     --react-international-phone-border-radius: 5px;
     --react-international-phone-border-color: #475569;
@@ -561,33 +622,15 @@ textarea,
     --react-international-phone-selected-dropdown-item-background-color: #132640;
     --react-international-phone-selected-dropdown-item-text-color: #ffffff;
     --react-international-phone-dropdown-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
-    --react-international-phone-dropdown-item-height: 34px;
-    --react-international-phone-flag-width: 20px;
-    --react-international-phone-flag-height: 20px;
 }
 
-.phone-field .react-international-phone-input-container {
-    width: 100%;
-}
-
-.phone-field .react-international-phone-input-container .react-international-phone-input {
-    width: 100%;
-    padding-left: 12px;
-    padding-right: 12px;
-}
-
-.phone-field .react-international-phone-input:focus {
+.tasho-phone-input--dark .react-international-phone-input:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 
-.phone-field .react-international-phone-country-selector-button {
-    padding: 0 10px;
-}
-
-.phone-field .react-international-phone-country-selector-dropdown {
-    width: 100%;
-    min-width: 260px;
+.tasho-phone-input--disabled {
+    opacity: 0.6;
 }
 
 .register-country-select .stdropdown-container {
@@ -663,90 +706,6 @@ textarea,
     height: 100%;
     width: 100%;
     object-fit: cover;
-}
-
-/*
- * Champ téléphone (react-phone-number-input).
- * Le conteneur reprend l'apparence des champs PrimeReact ; l'input interne
- * est transparent pour que le pays et le numéro forment un seul champ.
- */
-.tasho-phone-input {
-    --PhoneInputCountryFlag-height: 1.1em;
-    --PhoneInputCountrySelect-marginRight: 0.5rem;
-    --PhoneInput-color--focus: #1b9cd8;
-
-    display: flex;
-    align-items: center;
-    width: 100%;
-    min-height: 2.75rem;
-    padding: 0 0.75rem;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    background: #ffffff;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.tasho-phone-input:focus-within {
-    border-color: #1b9cd8;
-    box-shadow: 0 0 0 2px rgba(27, 156, 216, 0.18);
-}
-
-.tasho-phone-input .PhoneInputInput {
-    flex: 1;
-    min-width: 0;
-    width: 100%;
-    padding: 0.7rem 0;
-    border: 0;
-    outline: none;
-    box-shadow: none;
-    background: transparent;
-    color: #495057;
-    font: inherit;
-}
-
-.tasho-phone-input .PhoneInputInput::placeholder {
-    color: #9ca3af;
-}
-
-.tasho-phone-input--invalid {
-    border-color: #e24c4c;
-}
-
-.tasho-phone-input--invalid:focus-within {
-    border-color: #e24c4c;
-    box-shadow: 0 0 0 2px rgba(226, 76, 76, 0.16);
-}
-
-/* Variante sombre des pages d'authentification. */
-.tasho-phone-input--dark {
-    min-height: 2.5rem;
-    border-color: #475569;
-    border-radius: 0.75rem;
-    background: transparent;
-    color: #ffffff;
-}
-
-.tasho-phone-input--dark .PhoneInputInput {
-    padding: 0;
-    height: 2.5rem;
-    color: #ffffff;
-}
-
-.tasho-phone-input--dark .PhoneInputInput::placeholder {
-    color: #9ca3af;
-}
-
-.tasho-phone-input--dark:focus-within {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 1px #3b82f6;
-}
-
-.tasho-phone-input--dark .PhoneInputCountrySelectArrow {
-    color: #cbd5e1;
-}
-
-.tasho-phone-input--dark.PhoneInput--disabled {
-    opacity: 0.6;
 }
 
 /*

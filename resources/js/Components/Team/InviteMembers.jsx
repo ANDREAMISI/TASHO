@@ -113,8 +113,12 @@ export default function InviteMembers({ teamId, onSuccess }) {
                                 disabled={processing}
                                 className="inline-flex items-center px-4 py-2 bg-tasho-primary text-white rounded-md font-medium hover:bg-tasho-primary/90 transition disabled:opacity-50"
                             >
-                                <UserPlusIcon className="h-4 w-4 mr-2" />
-                                Inviter
+                                {processing ? (
+                                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white" />
+                                ) : (
+                                    <UserPlusIcon className="h-4 w-4 mr-2" />
+                                )}
+                                {processing ? 'Envoi…' : 'Inviter'}
                             </button>
                         </div>
                         {errors.email && (
